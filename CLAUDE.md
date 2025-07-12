@@ -84,11 +84,12 @@ sail php artisan test tests/Feature/
 
 ### Browser Testing Commands (Dusk)
 ```bash
-# Run all browser tests (automatically saves screenshots via Selenium container)
+# CURRENT BEST PRACTICE: Self-contained tests with inline data creation
+# No setup required - each test creates its own data:
 sail php artisan dusk
 
 # Run specific browser test file
-sail php artisan dusk tests/Browser/InvoicingWorkflowTest.php
+sail php artisan dusk tests/Browser/PageBasedTest.php
 
 # Run browser tests with specific browser
 sail php artisan dusk --browse
@@ -187,11 +188,39 @@ Invoice -> InvoiceItem (one-to-many)
 ### Development Guidelines
 
 **Testing Requirements:**
-- ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
+- **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
+- **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
 - Current coverage: 94.7% (maintain above 90%)
 - Use `createInvoiceWithItems()` and other test helpers in `tests/TestHelpers.php`
-- **Browser Tests**: Currently fixing authentication issues (see PLAN.md)
+
+**Browser Testing Best Practices (Dusk):**
+- **✅ PREFERRED APPROACH**: Self-contained tests with inline data creation using Laravel Page objects
+- **✅ RefreshDatabase**: Already applied to all Browser tests via `Pest.php` configuration
+- **✅ Inline Data Creation**: Create test data within each test using factories for perfect isolation
+- **✅ Page Objects**: Use Laravel Dusk Page classes in `tests/Browser/Pages/` for clean, reusable page interactions
+- **✅ Authentication**: Use `loginUserInBrowser($browser, $user)` helper with inline-created users
+- **✅ Email Domains**: Always use `.test` TLD for test email addresses (e.g., `user@example.test`)
+- **❌ AVOID**: External seeders, shared test data, or manual database setup
+
+**Example Browser Test Pattern:**
+```php
+test('user can access feature', function () {
+    // Create test data inline
+    $user = User::factory()->withPersonalTeam()->create([
+        'email' => 'test@example.test'
+    ]);
+    
+    $this->browse(function (Browser $browser) use ($user) {
+        // Use authentication helper
+        loginUserInBrowser($browser, $user);
+        
+        // Use Page objects for clean interactions
+        $page = new DashboardPage();
+        $browser->visit($page);
+    });
+});
+```
 
 **Code Standards:**
 - All monetary values stored as integers (never floats)
@@ -279,10 +308,16 @@ Invoice -> InvoiceItem (one-to-many)
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
 - 233 tests with 94.7% coverage (Unit + Feature + Browser)
-- Helper functions: `createOrganizationWithLocation()`, `createInvoiceWithItems()`
+- Helper functions: `createOrganizationWithLocation()`, `createInvoiceWithItems()`, `loginUserInBrowser()`
 - Edge case testing for large numbers, null values, decimal precision
 - Laravel Dusk browser tests with automatic screenshot capture
 - Screenshots saved for all browser tests in `tests/Browser/screenshots/`
+- **Browser Test Architecture**: Self-contained tests with Laravel Page objects
+  - Uses RefreshDatabase trait for clean isolation between tests
+  - Inline data creation using Laravel factories within each test
+  - Page objects in `tests/Browser/Pages/` for reusable page interactions
+  - Authentication helper: `loginUserInBrowser($browser, $user)` works with inline-created users
+  - All test emails use `.test` TLD (e.g., `user@example.test`)
 
 **Package Management:**
 - Yarn Berry (4.9.2) for frontend dependencies

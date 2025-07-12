@@ -86,6 +86,7 @@ class PdfService
         return config('services.chrome.enabled', false);
     }
 
+
     /**
      * Download PDF for an invoice
      */

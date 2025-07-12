@@ -2,11 +2,11 @@
 
 use App\Models\Invoice;
 use App\Services\PdfService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Illuminate\Http\Response;
 use Spatie\Browsershot\Browsershot;
 
-uses(RefreshDatabase::class);
+
 
 test('pdf service can be instantiated', function () {
     $pdfService = new PdfService();
