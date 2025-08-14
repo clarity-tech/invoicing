@@ -534,7 +534,7 @@ class Organization extends Model {
     protected function casts(): array {
         return [
             'currency' => Currency::class,
-            'emails' => EmailCollectionCast::class,
+            'emails' => ContactCollectionCast::class,
             'personal_team' => 'boolean',
         ];
     }

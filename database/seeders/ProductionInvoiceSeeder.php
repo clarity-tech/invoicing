@@ -6,7 +6,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Organization;
-use App\ValueObjects\EmailCollection;
+use App\ValueObjects\ContactCollection;
 use Illuminate\Database\Seeder;
 
 class ProductionInvoiceSeeder extends Seeder
