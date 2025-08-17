@@ -82,6 +82,24 @@ sail php artisan test tests/Unit/
 sail php artisan test tests/Feature/
 ```
 
+### Browser Testing Commands (Dusk)
+```bash
+# Run all browser tests (automatically saves screenshots via Selenium container)
+sail php artisan dusk
+
+# Run specific browser test file
+sail php artisan dusk tests/Browser/InvoicingWorkflowTest.php
+
+# Run browser tests with specific browser
+sail php artisan dusk --browse
+
+# View screenshots directory
+ls -la tests/Browser/screenshots/
+
+# Note: Uses selenium/standalone-chromium container in docker-compose
+# Browser tests connect to http://selenium:4444/wd/hub automatically
+```
+
 ### Database Commands
 ```bash
 # Check migration status
@@ -92,6 +110,18 @@ sail php artisan migrate:fresh --seed
 
 # Rollback migration
 sail php artisan migrate:rollback
+```
+
+### Code Formatting Commands
+```bash
+# Format current uncommitted changes with Laravel Pint (ALWAYS run before commits)
+sail pint --dirty
+
+# Format specific files
+sail pint app/Models/Invoice.php
+
+# Check formatting without fixing
+sail pint --test
 ```
 
 ### Frontend Commands
@@ -162,6 +192,7 @@ Invoice -> InvoiceItem (one-to-many)
 - Default currency: INR (Indian Rupees)
 
 **Commit Guidelines:**
+- **ALWAYS run `sail pint --dirty` before every commit** to format uncommitted changes
 - Atomic, conventional commits with format: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
 - All tests must pass before commit
 - Commit regularly with meaningful messages
@@ -222,16 +253,27 @@ Invoice -> InvoiceItem (one-to-many)
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 222 tests with 94.7% coverage 
+- 233 tests with 94.7% coverage (Unit + Feature + Browser)
 - Helper functions: `createCompanyWithLocation()`, `createInvoiceWithItems()`
 - Edge case testing for large numbers, null values, decimal precision
+- Laravel Dusk browser tests with automatic screenshot capture
+- Screenshots saved for all browser tests in `tests/Browser/screenshots/`
 
 **Package Management:**
 - Yarn Berry (4.9.2) for frontend dependencies
 - No package-lock.json (deleted - use yarn.lock only)
 - Puppeteer available globally, not as project dependency
 
+**Browser Testing Setup:**
+- Laravel Dusk with Selenium standalone Chrome container
+- Automatic screenshot capture for all browser tests
+- Remote WebDriver connects to `http://selenium:4444/wd/hub`
+- Screenshots stored in `tests/Browser/screenshots/`
+
 ## Development Database
 - pgweb interface available at http://localhost:8081
 - Direct PostgreSQL access via `sail psql`
 - All services accessible at http://localhost
+
+## Git Workflow
+- Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
