@@ -45,15 +45,14 @@ chmod -R 775 /app/storage /app/bootstrap/cache
 # Run Laravel optimizations
 echo "Running Laravel optimizations..."
 if [ "$APP_ENV" = "production" ]; then
+    # Clear any existing caches first
+    php artisan optimize:clear
+
     # Cache configurations in production
     php artisan config:cache
     php artisan route:cache
     php artisan view:cache
-    php artisan event:cache
-    
-    # Clear any existing caches first
-    php artisan optimize:clear
-    
+
     # Run optimizations
     php artisan optimize
 else
