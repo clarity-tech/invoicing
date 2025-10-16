@@ -44,16 +44,21 @@ chmod -R 775 /app/storage /app/bootstrap/cache
 
 # Run Laravel optimizations
 echo "Running Laravel optimizations..."
+
+# Discover packages first (skipped during build)
+echo "Discovering packages..."
+# php artisan package:discover --ansi
+composer run-script post-autoload-dump
+
 if [ "$APP_ENV" = "production" ]; then
+    # Clear any existing caches first
+    php artisan optimize:clear
+
     # Cache configurations in production
     php artisan config:cache
     php artisan route:cache
     php artisan view:cache
-    php artisan event:cache
-    
-    # Clear any existing caches first
-    php artisan optimize:clear
-    
+
     # Run optimizations
     php artisan optimize
 else
