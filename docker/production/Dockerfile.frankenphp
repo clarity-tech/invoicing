@@ -50,6 +50,9 @@ RUN yarn install --immutable
 # Copy application source code
 COPY . .
 
+# Copy environment file for build
+COPY docker/production/env .env
+
 # Run post-install scripts and optimizations
 RUN composer run-script post-autoload-dump && \
     php artisan config:cache && \
