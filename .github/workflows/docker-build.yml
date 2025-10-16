@@ -103,6 +103,7 @@ jobs:
         run: ls -al
 
       - name: Upload Trivy scan results to GitHub Security tab
+        if: always() && hashFiles('trivy-results-${{ matrix.target }}.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
