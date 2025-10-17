@@ -53,11 +53,6 @@ COPY . .
 # Copy environment file for build
 COPY docker/production/env .env
 
-# Run post-install scripts and optimizations
-
-RUN composer run-script post-autoload-dump && \
-    php artisan event:cache
-
 # Build frontend assets
 RUN yarn build
 
