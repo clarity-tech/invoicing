@@ -33,6 +33,7 @@ WORKDIR /var/www/html
 # Copy dependency files first for better layer caching
 COPY composer.json composer.lock ./
 COPY package.json yarn.lock ./
+COPY .yarnrc.yml ./
 
 # Install PHP dependencies (production only, optimized)
 RUN composer install \
@@ -48,7 +49,7 @@ RUN composer install \
 RUN yarn --version
 
 # Install Node.js dependencies
-RUN yarn --frozen-lockfile --non-interactive
+RUN yarn install --immutable
 
 # Copy application source code
 COPY . .
