@@ -44,8 +44,11 @@ RUN composer install \
     --optimize-autoloader \
     --classmap-authoritative
 
+# Verify Yarn version
+RUN yarn --version
+
 # Install Node.js dependencies
-RUN yarn install --immutable
+RUN yarn --frozen-lockfile --non-interactive
 
 # Copy application source code
 COPY . .
@@ -56,9 +59,8 @@ COPY docker/production/env .env
 # Build frontend assets
 RUN yarn build
 
-# Clean up development dependencies
-RUN yarn workspaces focus --production && \
-    yarn cache clean --all
+# Clean up yarn cache
+RUN yarn cache clean --all
 
 # ========================================
 # Base Runtime Stage - ServerSideUp PHP
