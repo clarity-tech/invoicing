@@ -19,6 +19,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -26,24 +27,25 @@ jobs:
     
     strategy:
       matrix:
-        target: [frankenphp, nginx-fpm, standalone, standalone-alpine]
+        target: [frankenphp]
+        # target: [frankenphp, nginx-fpm, standalone, standalone-alpine]
         include:
           - target: frankenphp
             dockerfile: docker/production/Dockerfile.frankenphp
             image-suffix: ''
             build-target: frankenphp
-          - target: nginx-fpm
-            dockerfile: docker/production/Dockerfile.nginx-fpm
-            image-suffix: '-nginx'
-            build-target: production
-          - target: standalone
-            dockerfile: docker/production/Dockerfile.standalone
-            image-suffix: '-standalone'
-            build-target: runtime
-          - target: standalone-alpine
-            dockerfile: docker/production/Dockerfile.standalone
-            image-suffix: '-standalone-alpine'
-            build-target: standalone-alpine
+          # - target: nginx-fpm
+            # dockerfile: docker/production/Dockerfile.nginx-fpm
+            # image-suffix: '-nginx'
+            # build-target: production
+          # - target: standalone
+            # dockerfile: docker/production/Dockerfile.standalone
+            # image-suffix: '-standalone'
+            # build-target: runtime
+          # - target: standalone-alpine
+            # dockerfile: docker/production/Dockerfile.standalone
+            # image-suffix: '-standalone-alpine'
+            # build-target: standalone-alpine
 
     steps:
       - name: Checkout repository
@@ -78,12 +80,12 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.build-target }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -91,6 +93,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            VITE_APP_NAME=Clarity Invoicing
 
       - name: Run Trivy vulnerability scanner
         continue-on-error: true
@@ -117,20 +120,21 @@ jobs:
     
     strategy:
       matrix:
-        target: [frankenphp, nginx-fpm, standalone, standalone-alpine]
+        target: [frankenphp]
+        # target: [frankenphp, nginx-fpm, standalone, standalone-alpine]
         include:
           - target: frankenphp
             image-suffix: ''
             port: 8000
-          - target: nginx-fpm
-            image-suffix: '-nginx'
-            port: 80
-          - target: standalone
-            image-suffix: '-standalone'
-            port: 8000
-          - target: standalone-alpine
-            image-suffix: '-standalone-alpine'
-            port: 8000
+          # - target: nginx-fpm
+          #   image-suffix: '-nginx'
+          #   port: 80
+          # - target: standalone
+          #   image-suffix: '-standalone'
+          #   port: 8000
+          # - target: standalone-alpine
+          #   image-suffix: '-standalone-alpine'
+          #   port: 8000
 
     steps:
       - name: Checkout repository
