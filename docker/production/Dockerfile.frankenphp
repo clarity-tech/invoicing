@@ -34,6 +34,15 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 COPY package.json yarn.lock .yarnrc.yml ./
 
+# Verify Yarn version
+RUN yarn --version
+
+# Install Node.js dependencies
+RUN yarn install --immutable
+
+# Copy full application source
+COPY . .
+
 # Install PHP dependencies (production only, optimized)
 RUN composer install \
     --no-dev \
@@ -44,14 +53,8 @@ RUN composer install \
     --optimize-autoloader \
     --classmap-authoritative
 
-# Verify Yarn version
-RUN yarn --version
-
-# Install Node.js dependencies
-RUN yarn install --immutable
-
 # Copy application source code
-COPY . .
+# COPY . .
 
 # Build frontend assets (no env file needed - only uses VITE_ variables)
 # Pass any required build-time variables as ARG if needed
