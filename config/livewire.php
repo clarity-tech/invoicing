@@ -63,6 +63,10 @@ return [
     |
     */
 
+    'listeners' => [
+         Laravel\Octane\Listeners\FlushUploadedFiles::class,
+    ],
+
     'temporary_file_upload' => [
         'disk' => 'local',        // Example: 'local', 's3'              | Default: 'default'
         'rules' => null,       // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
