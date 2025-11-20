@@ -160,8 +160,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /app/run/supervisor /app/log/supervisor \
-    && chown -R www:www /app/run /app/log
+    && mkdir -p /var/run /var/log/supervisor \
+    && chown -R www:www /var/run /var/log/supervisor
 
 # Expose port
 EXPOSE 8000
