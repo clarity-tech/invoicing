@@ -99,6 +99,7 @@ ls -la tests/Browser/screenshots/
 
 # Note: Uses selenium/standalone-chromium container in docker-compose
 # Browser tests connect to http://selenium:4444/wd/hub automatically
+# ⚠️ Known Issue: TestHelpers.php function redeclaration needs fixing
 ```
 
 ### Database Commands
@@ -106,12 +107,28 @@ ls -la tests/Browser/screenshots/
 # Check migration status
 sail php artisan migrate:status
 
-# Fresh migration with seeding
+# Fresh migration with seeding (demo data - local environment only)
 sail php artisan migrate:fresh --seed
+
+# Run demo seeding only (local environment only)
+sail php artisan db:seed
+
+# Production seeding (can run in any environment, asks confirmation in production)
+sail php artisan db:seed --class=ProductionSeeder
 
 # Rollback migration
 sail php artisan migrate:rollback
 ```
+
+### Production Seeders
+- **ProductionSeeder.php** - Main orchestrator with environment safety for production/staging/testing
+- **ProductionUserSeeder.php** - Clarity Technologies organization with static users (accounts@claritytech.io, manash@claritytech.io)
+- **ProductionCustomerSeeder.php** - Three real customers with accurate addresses and GSTIN numbers:
+  - RxNow Pharmacy LLC (Dubai, AED currency)
+  - DocOnline Health India Pvt Ltd (Bangalore, INR currency, GSTIN: 29AAFCD9711R1ZV)
+  - Krishna Institute of Medical Sciences (Hyderabad, INR currency, GSTIN: 36AACCK2540G1ZU)
+- **ProductionInvoiceSeeder.php** - Sample multi-currency invoices and estimates for demonstration
+- **Environment Safety**: Production seeders can run in any environment but ask for confirmation in production/staging
 
 ### Code Formatting Commands
 ```bash
@@ -233,6 +250,34 @@ test('user can access feature', function () {
 - Store all amounts in cents (integer) 
 - Use akaunting/laravel-money package for formatting
 - Default currency: INR (Indian Rupees)
+
+**Translation System (Laravel Internationalization):**
+- **Comprehensive translation infrastructure** in `lang/en/` with 4 organized files:
+  - `documents.php` - Document headers, fields, financial terms, table labels, status values
+  - `forms.php` - Form labels, validation messages, steps, placeholders, hints
+  - `actions.php` - Buttons, navigation, confirmations, tooltips, shortcuts
+  - `messages.php` - Email templates, notifications, system messages, help text
+- **Translation Usage Pattern**: Always use `{{ __('key') }}` helper in Blade templates
+- **Key Organization**: Group translations logically (e.g., `documents.fields.due_date`, `actions.buttons.create_invoice`)
+- **Parameterized Translations**: Support dynamic content with `{{ __('key', ['param' => $value]) }}`
+- **Consistency Rule**: ALL user-facing text must use translation strings - no hardcoded text in views
+- **Terminology Standards**: Use "Due Date" consistently for both invoices and estimates (not "Valid Until")
+
+**Translation Implementation Examples:**
+```php
+// Document fields
+{{ __('documents.fields.due_date') }}          // "Due Date"
+{{ __('documents.financial.total') }}          // "Total:"
+{{ __('documents.headers.invoice_upper') }}    // "INVOICE"
+
+// Form labels with parameters
+{{ __('forms.labels.price_required', ['currency' => 'INR']) }}  // "Price (INR) *"
+{{ __('messages.email.greeting', ['email' => $email]) }}        // "Dear john@example.com,"
+
+// Action buttons
+{{ __('actions.buttons.create_invoice') }}     // "Create Invoice"
+{{ __('actions.buttons.download_pdf') }}       // "Download PDF"
+```
 
 **Commit Guidelines:**
 - **ALWAYS run `sail pint --dirty` before every commit** to format uncommitted changes
