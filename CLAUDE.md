@@ -400,6 +400,81 @@ test('user can access feature', function () {
   - Primary contact: ayshwarya@1115inc.com
   - Secondary contact: consult@1115inc.com
 
+## Invoice Numbering Series System
+
+### Architecture Overview
+The invoice numbering system provides flexible, multi-organization support with automatic series creation and comprehensive format pattern support.
+
+**Complete User Flow:**
+1. **User Registration** → Personal organization auto-created via Jetstream
+2. **Organization Setup** → 4-step wizard for business configuration
+3. **Numbering Series** → Auto-created on first invoice OR manually managed
+4. **Invoice Creation** → Automatic series selection with manual override option
+
+### Key Components
+
+**Models:**
+- `InvoiceNumberingSeries` - Core model with reset logic and sequence management
+- Relationships: Organization (teams), Location, Invoice
+- Scopes: `active()`, `default()`, `forOrganization()`, `forLocation()`
+
+**Service Layer:**
+- `InvoiceNumberingService` - Business logic for number generation
+- Handles format pattern parsing, financial year integration, uniqueness validation
+- Transaction-safe number generation with automatic fallbacks
+
+**Management Interface:**
+- Route: `/numbering-series` → `NumberingSeriesManager` Livewire component
+- Full CRUD with real-time preview, security checks, default series management
+
+### Format Pattern Tokens
+```php
+{PREFIX}      // Series prefix (INV, EST, DXB-INV)
+{YEAR}        // Full year (2024)
+{YEAR:2}      // 2-digit year (24)
+{MONTH}       // Month number (01-12)
+{MONTH:3}     // Month abbreviation (Jan, Feb)
+{DAY}         // Day of month (01-31)
+{SEQUENCE}    // Sequential number
+{SEQUENCE:4}  // Padded sequence (0001, 0002)
+{FY}          // Financial year (2024-25)
+{FY_START}    // FY start year (2024)
+{FY_END}      // FY end year (2025)
+```
+
+### Reset Frequencies
+- `NEVER` - Continuous numbering (1, 2, 3, ...)
+- `YEARLY` - Reset every calendar year
+- `MONTHLY` - Reset every month  
+- `FINANCIAL_YEAR` - Reset based on organization's financial year
+
+### Series Selection Hierarchy
+1. **Specific series requested** → Use that series
+2. **Location provided** → Find location-specific active series
+3. **Fall back to default** → Use organization's default series
+4. **No default exists** → Create default series automatically
+
+### Database Schema
+```sql
+invoice_numbering_series:
+  - organization_id, location_id (nullable for org-wide)
+  - name, prefix, format_pattern
+  - current_number, reset_frequency
+  - is_active, is_default, last_reset_at
+```
+
+### Example Generated Numbers
+- Standard: `INV-2024-01-0001`
+- Financial Year: `INV-2024-25-0001`
+- Location-specific: `DXB-INV-2024-0001`
+- Simple: `EST-0001`
+
+### Financial Year Integration
+- Requires `organization.financial_year_type` and `country_code`
+- Automatic FY calculation based on current date
+- Validates FY setup for FY-based series and format patterns
+- Supports different country financial year systems
+
 ## Git Workflow
 - Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
 - Always run tests for both (browser and unit) and make sure it passes before commit
