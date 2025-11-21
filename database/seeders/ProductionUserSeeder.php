@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Location;
 use App\Models\Organization;
 use App\Models\User;
-use App\ValueObjects\EmailCollection;
+use App\ValueObjects\ContactCollection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -35,7 +35,7 @@ class ProductionUserSeeder extends Seeder
             'company_name' => 'Clarity Technologies',
             'tax_number' => '18ASBPB0118P1ZX',
             'registration_number' => 'U74999AS2020PTC009876',
-            'emails' => new EmailCollection(['accounts@claritytech.io', 'manash@claritytech.io']),
+            'emails' => new ContactCollection([['name' => 'Accounts', 'email' => 'accounts@claritytech.io'], ['name' => 'Manash', 'email' => 'manash@claritytech.io']]),
             'phone' => '+91-94010-12345',
             'website' => 'https://claritytech.io',
             'currency' => 'INR',

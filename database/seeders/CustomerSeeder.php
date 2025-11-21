@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Customer;
 use App\Models\Location;
 use App\Models\Organization;
-use App\ValueObjects\EmailCollection;
+use App\ValueObjects\ContactCollection;
 
 class CustomerSeeder extends ProductionSafeSeeder
 {
@@ -106,7 +106,7 @@ class CustomerSeeder extends ProductionSafeSeeder
                 ->for($organization)
                 ->create([
                     'name' => 'RxNow LLC',
-                    'emails' => new EmailCollection(['billing@rxnow.test', 'finance@rxnow.test']),
+                    'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.test'], ['name' => 'Finance', 'email' => 'finance@rxnow.test']]),
                     'phone' => '+971-4-1234567',
                 ]);
             
@@ -131,7 +131,7 @@ class CustomerSeeder extends ProductionSafeSeeder
                 ->for($organization)
                 ->create([
                     'name' => '1115inc',
-                    'emails' => new EmailCollection(['ayshwarya@1115inc.test', 'consult@1115inc.test']),
+                    'emails' => new ContactCollection([['name' => 'Ayshwarya', 'email' => 'ayshwarya@1115inc.test'], ['name' => 'Consultant', 'email' => 'consult@1115inc.test']]),
                     'phone' => '+971-4-7654321',
                 ]);
             

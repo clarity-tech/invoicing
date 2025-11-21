@@ -171,7 +171,7 @@ sail psql
 ### Core Architectural Patterns
 
 **Domain-Driven Design Influence:**
-- Value Objects (`EmailCollection`, `InvoiceTotals`) encapsulate business logic
+- Value Objects (`ContactCollection`, `InvoiceTotals`) encapsulate business logic
 - Service Layer (`InvoiceCalculator`, `PdfService`, `EstimateToInvoiceConverter`) handles business operations
 - Rich domain models with business methods (`Invoice::isInvoice()`, `InvoiceItem::getLineTotal()`)
 
@@ -242,7 +242,7 @@ test('user can access feature', function () {
 **Code Standards:**
 - All monetary values stored as integers (never floats)
 - Use Value Objects for complex data structures
-- Implement custom casts for JSON columns (`EmailCollectionCast`)
+- Implement custom casts for JSON columns (`ContactCollectionCast`)
 - Follow latest Laravel conventions (use `casts()` method, not `$casts` property)
 - Avoid associative arrays - use proper object instances for data passing
 
@@ -288,7 +288,7 @@ test('user can access feature', function () {
 ### Key Components
 
 **Models:**
-- `Organization` - Business entities (renamed from Team) with polymorphic locations, EmailCollection emails, tax templates, and multi-currency support including AED
+- `Organization` - Business entities (renamed from Team) with polymorphic locations, ContactCollection contacts, tax templates, and multi-currency support including AED
 - `Customer` - Customer entities with polymorphic locations, belonging to organizations (includes UAE customers: RxNow LLC, 1115inc)
 - `Location` - Polymorphic model serving organizations and customers
 - `Invoice` - Unified model for invoices/estimates with organization relationship, flexible tax types, and JSON email recipients
@@ -296,7 +296,7 @@ test('user can access feature', function () {
 - `TaxTemplate` - Multi-country tax templates per organization with flexible categories (includes UAE VAT and Excise taxes)
 
 **Value Objects:**
-- `EmailCollection` - Immutable collection with validation for multiple emails
+- `ContactCollection` - Immutable collection with validation for multiple contacts (name + email)
 - `InvoiceTotals` - Readonly class for subtotal, tax, total calculations
 
 **Services:**
@@ -310,7 +310,7 @@ test('user can access feature', function () {
 - `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations and tax template integration
 
 **Custom Casts:**
-- `EmailCollectionCast` - Seamless JSON ↔ EmailCollection conversion with error handling
+- `ContactCollectionCast` - Seamless JSON ↔ ContactCollection conversion with error handling
 
 ## URL Structure & Routes
 - `/organizations` - Organization management (Livewire component)
