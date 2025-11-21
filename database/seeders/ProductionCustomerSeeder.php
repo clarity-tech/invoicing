@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Customer;
 use App\Models\Location;
 use App\Models\Organization;
-use App\ValueObjects\EmailCollection;
+use App\ValueObjects\ContactCollection;
 use Illuminate\Database\Seeder;
 
 class ProductionCustomerSeeder extends Seeder
@@ -29,7 +29,7 @@ class ProductionCustomerSeeder extends Seeder
         $rxnowCustomer = Customer::create([
             'name' => 'RxNow Pharmacy LLC',
             'phone' => '+971-4-5551234',
-            'emails' => new EmailCollection(['billing@rxnow.ae', 'info@rxnow.ae']),
+            'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.ae'], ['name' => 'Info', 'email' => 'info@rxnow.ae']]),
             'organization_id' => $clarityOrg->id,
         ]);
 
@@ -51,7 +51,7 @@ class ProductionCustomerSeeder extends Seeder
         $docOnlineCustomer = Customer::create([
             'name' => 'DOCONLINE HEALTH INDIA PRIVATE LIMITED',
             'phone' => '+91-80-4567-8901',
-            'emails' => new EmailCollection(['billing@doconline.in', 'accounts@doconline.in']),
+            'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@doconline.in'], ['name' => 'Accounts', 'email' => 'accounts@doconline.in']]),
             'organization_id' => $clarityOrg->id,
         ]);
 
@@ -74,7 +74,7 @@ class ProductionCustomerSeeder extends Seeder
         $krishnaCustomer = Customer::create([
             'name' => 'Krishna Institute of Medical Sciences Limited',
             'phone' => '+91-40-4567-8901',
-            'emails' => new EmailCollection(['procurement@kims.in', 'finance@kims.in']),
+            'emails' => new ContactCollection([['name' => 'Procurement', 'email' => 'procurement@kims.in'], ['name' => 'Finance', 'email' => 'finance@kims.in']]),
             'organization_id' => $clarityOrg->id,
         ]);
 
