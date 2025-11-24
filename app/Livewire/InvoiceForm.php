@@ -375,14 +375,24 @@ class InvoiceForm extends Component
             $documentType = $this->invoice->type;
             $documentNumber = $this->invoice->invoice_number;
             $customerName = $this->invoice->customer?->display_name ?? 'Customer';
-            $organizationName = strtoupper($this->invoice->organization->company_name ?? $this->invoice->organization->name);
+            $organization = $this->invoice->organization;
+            $organizationName = strtoupper($organization->company_name ?? $organization->name);
 
             // Format amount safely
             $currencyCode = $this->invoice->currency instanceof \App\Currency ? $this->invoice->currency->value : $this->invoice->currency;
             $formattedAmount = money($this->invoice->total, $currencyCode);
 
             // Create email body - use only tags Trix preserves
-            $html = '<div><strong>'.$organizationName.'</strong></div>';
+            $html = '';
+
+            // Add organization logo if available
+            $logoUrl = $organization->logo_url;
+            if ($logoUrl) {
+                $html .= '<div><img src="'.$logoUrl.'" alt="'.$organization->name.'" style="max-height: 64px; max-width: 128px;"></div>';
+                $html .= '<div><br></div>';
+            }
+
+            $html .= '<div><strong>'.$organizationName.'</strong></div>';
             $html .= '<div><br></div>';
             $html .= '<div><strong>'.ucfirst($documentType).' #'.$documentNumber.'</strong></div>';
             $html .= '<div><br></div>';
