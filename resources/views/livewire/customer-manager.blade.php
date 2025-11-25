@@ -267,11 +267,26 @@
                     </div>
 
                     <form wire:submit="saveLocation" class="p-6 space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Location Name *</label>
-                            <input wire:model="location_name" type="text" placeholder="e.g., Main Office, Warehouse, Branch 1"
-                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            @error('location_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                                <select wire:model="country" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select Country</option>
+                                    @foreach(\App\Enums\Country::cases() as $countryOption)
+                                        <option value="{{ $countryOption->value }}">
+                                            {{ $countryOption->flag() }} {{ $countryOption->name() }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('country') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Location Name *</label>
+                                <input wire:model="location_name" type="text" placeholder="e.g., Main Office, Warehouse, Branch 1"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                @error('location_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
                         </div>
 
                         <div>
@@ -306,25 +321,10 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-                                <select wire:model="country" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Country</option>
-                                    @foreach(\App\Enums\Country::cases() as $countryOption)
-                                        <option value="{{ $countryOption->value }}">
-                                            {{ $countryOption->flag() }} {{ $countryOption->name() }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('country') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
-                                <input wire:model="postal_code" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                @error('postal_code') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                            <input wire:model="postal_code" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            @error('postal_code') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="flex items-center">
