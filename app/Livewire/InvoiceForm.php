@@ -385,20 +385,15 @@ class InvoiceForm extends Component
             // Create email body - use only tags Trix preserves
             $html = '';
 
-            // Add organization logo if available
-            $logoUrl = $organization->logo_url;
-            if ($logoUrl) {
-                $html .= '<div><img src="'.$logoUrl.'" alt="'.$organization->name.'" style="max-height: 64px; max-width: 128px;"></div>';
-                $html .= '<div><br></div>';
+            // Add organization logo if available (use base64 for email compatibility)
+            $logoBase64 = $organization->logo_base64;
+            if ($logoBase64) {
+                $html .= '<div><img src="'.$logoBase64.'" alt="'.$organization->name.'"></div>';
             }
 
-            $html .= '<div><strong>'.$organizationName.'</strong></div>';
-            $html .= '<div><br></div>';
             $html .= '<div><strong>'.ucfirst($documentType).' #'.$documentNumber.'</strong></div>';
-            $html .= '<div><br></div>';
             $html .= '<div>Dear '.$customerName.',</div>';
-            $html .= '<div><br></div>';
-            $html .= '<div>Thank you for your business. Your '.strtolower($documentType).' can be viewed, printed and downloaded as PDF from the link below. You can also choose to pay it online.</div>';
+            $html .= '<div>Thank you for your business. Your '.strtolower($documentType).' can be viewed, printed and downloaded as PDF from the link below.</div>';
             $html .= '<div><br></div>';
             $html .= '<blockquote><div><strong>'.strtoupper($documentType).' AMOUNT</strong><strong><em>'.$formattedAmount.'</em></strong></div></blockquote>';
 
