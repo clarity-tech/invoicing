@@ -697,6 +697,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/trusted-types@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "@types/trusted-types@npm:2.0.7"
+  checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
+  languageName: node
+  linkType: hard
+
 "@vue/reactivity@npm:~3.1.1":
   version: 3.1.5
   resolution: "@vue/reactivity@npm:3.1.5"
@@ -1006,6 +1013,18 @@ __metadata:
   version: 2.1.2
   resolution: "detect-libc@npm:2.1.2"
   checksum: 10c0/acc675c29a5649fa1fb6e255f993b8ee829e510b6b56b0910666949c80c364738833417d0edb5f90e4e46be17228b0f2b66a010513984e18b15deeeac49369c4
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.2.5":
+  version: 3.3.0
+  resolution: "dompurify@npm:3.3.0"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10c0/66b1787b0bc8250d8f58e13284cf7f5f6bb400a0a55515e7a2a030316a4bb0d8306fdb669c17ed86ed58ff7e53c62b5da4488c2f261d11c58870fe01b8fcc486
   languageName: node
   linkType: hard
 
@@ -2096,6 +2115,7 @@ __metadata:
     laravel-vite-plugin: "npm:^2.0.0"
     postcss: "npm:^8.5.6"
     tailwindcss: "npm:^4.1.11"
+    trix: "npm:^2.1.15"
     tw-animate-css: "npm:^1.3.5"
     vite: "npm:^7.0.5"
   languageName: unknown
@@ -2308,6 +2328,15 @@ __metadata:
   bin:
     tree-kill: cli.js
   checksum: 10c0/7b1b7c7f17608a8f8d20a162e7957ac1ef6cd1636db1aba92f4e072dc31818c2ff0efac1e3d91064ede67ed5dc57c565420531a8134090a12ac10cf792ab14d2
+  languageName: node
+  linkType: hard
+
+"trix@npm:^2.1.15":
+  version: 2.1.15
+  resolution: "trix@npm:2.1.15"
+  dependencies:
+    dompurify: "npm:^3.2.5"
+  checksum: 10c0/fb1b53d03e13d007a21c7417bbc994b24073a48d51b94bee679f8bb748b2e2cf9469372b3292d40f27bf502a88ab27d43a0c3c08928b708f65741c1f9eca7c77
   languageName: node
   linkType: hard
 
