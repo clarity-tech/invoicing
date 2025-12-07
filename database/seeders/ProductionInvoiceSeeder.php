@@ -6,7 +6,6 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Organization;
-use App\ValueObjects\ContactCollection;
 use Illuminate\Database\Seeder;
 
 class ProductionInvoiceSeeder extends Seeder
@@ -20,9 +19,10 @@ class ProductionInvoiceSeeder extends Seeder
 
         // Get Clarity Technologies organization
         $clarityOrg = Organization::where('company_name', 'Clarity Technologies')->first();
-        
-        if (!$clarityOrg) {
+
+        if (! $clarityOrg) {
             $this->command->error('Clarity Technologies organization not found. Please run ProductionUserSeeder first.');
+
             return;
         }
 
@@ -31,8 +31,9 @@ class ProductionInvoiceSeeder extends Seeder
         $docOnlineCustomer = Customer::where('name', 'DOCONLINE HEALTH INDIA PRIVATE LIMITED')->where('organization_id', $clarityOrg->id)->first();
         $krishnaCustomer = Customer::where('name', 'Krishna Institute of Medical Sciences Limited')->where('organization_id', $clarityOrg->id)->first();
 
-        if (!$rxnowCustomer || !$docOnlineCustomer || !$krishnaCustomer) {
+        if (! $rxnowCustomer || ! $docOnlineCustomer || ! $krishnaCustomer) {
             $this->command->error('Production customers not found. Please run ProductionCustomerSeeder first.');
+
             return;
         }
 
@@ -42,6 +43,7 @@ class ProductionInvoiceSeeder extends Seeder
             'organization_location_id' => $clarityOrg->primary_location_id,
             'customer_id' => $rxnowCustomer->id,
             'customer_location_id' => $rxnowCustomer->primary_location_id,
+            'customer_shipping_location_id' => $rxnowCustomer->primary_location_id,
             'invoice_number' => 'CT-INV-001',
             'issued_at' => now()->subDays(15),
             'due_at' => now()->addDays(15),
@@ -79,6 +81,7 @@ class ProductionInvoiceSeeder extends Seeder
             'organization_location_id' => $clarityOrg->primary_location_id,
             'customer_id' => $docOnlineCustomer->id,
             'customer_location_id' => $docOnlineCustomer->primary_location_id,
+            'customer_shipping_location_id' => $docOnlineCustomer->primary_location_id,
             'invoice_number' => 'CT-INV-002',
             'issued_at' => now()->subDays(10),
             'due_at' => now()->addDays(20),
@@ -116,6 +119,7 @@ class ProductionInvoiceSeeder extends Seeder
             'organization_location_id' => $clarityOrg->primary_location_id,
             'customer_id' => $krishnaCustomer->id,
             'customer_location_id' => $krishnaCustomer->primary_location_id,
+            'customer_shipping_location_id' => $krishnaCustomer->primary_location_id,
             'invoice_number' => 'CT-EST-001',
             'issued_at' => now()->subDays(5),
             'due_at' => now()->addDays(25),
