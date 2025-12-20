@@ -87,6 +87,11 @@ sail php artisan test tests/Feature/
 # First-time setup (downloads Chromium, ~60s, persists across restarts)
 sail composer browser-setup
 
+# If browser-setup fails with EACCES permission error on /opt/playwright-browsers,
+# fix volume permissions first, then re-run:
+sail root-shell -c "chmod 777 /opt/playwright-browsers"
+sail composer browser-setup
+
 # Run all browser tests
 sail php artisan test tests/Browser
 
