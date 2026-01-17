@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Laravel Version**: 12.19.3
 - **PHP Version**: 8.5.2
 - **Database**: PostgreSQL
-- **UI Framework**: Livewire 3.6.3 + luvi-ui/laravel-luvi (shadcn for Livewire)
+- **UI Framework**: Livewire 4.1.4 + luvi-ui/laravel-luvi (shadcn for Livewire)
 - **Testing**: Pest
 - **Package Manager**: Bun
 - **Container**: Laravel Sail
@@ -406,7 +406,7 @@ it('user can access feature', function () {
 The invoice numbering system provides flexible, multi-organization support with automatic series creation and comprehensive format pattern support.
 
 **Complete User Flow:**
-1. **User Registration** → Personal organization auto-created via Jetstream
+1. **User Registration** → Personal organization auto-created via Fortify/TeamServiceProvider
 2. **Organization Setup** → 4-step wizard for business configuration
 3. **Numbering Series** → Auto-created on first invoice OR manually managed
 4. **Invoice Creation** → Automatic series selection with manual override option
@@ -523,7 +523,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/octane (OCTANE) - v2
 - laravel/prompts (PROMPTS) - v0
 - laravel/sanctum (SANCTUM) - v4
-- livewire/livewire (LIVEWIRE) - v3
+- livewire/livewire (LIVEWIRE) - v4
 - laravel/boost (BOOST) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pail (PAIL) - v1
@@ -537,7 +537,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
-- `livewire-development` — Develops reactive Livewire 3 components. Activates when creating, updating, or modifying Livewire components; working with wire:model, wire:click, wire:loading, or any wire: directives; adding real-time updates, loading states, or reactivity; debugging component behavior; writing Livewire tests; or when the user mentions Livewire, component, counter, or reactive UI.
+- `livewire-development` — Develops reactive Livewire 4 components. Activates when creating, updating, or modifying Livewire components; working with wire:model, wire:click, wire:loading, or any wire: directives; adding real-time updates, loading states, or reactivity; debugging component behavior; writing Livewire tests; or when the user mentions Livewire, component, counter, or reactive UI.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `medialibrary-development` — Build and work with spatie/laravel-medialibrary features including associating files with Eloquent models, defining media collections and conversions, generating responsive images, and retrieving media URLs and paths.
 
