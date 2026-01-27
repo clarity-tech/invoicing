@@ -39,7 +39,7 @@ A multitenant SaaS invoicing platform where businesses can register, create orga
 - **Jetstream removed**: All Jetstream code inlined into `app/` (traits, events, actions, policies)
 - **Livewire v4**: Upgraded from v3, using new config structure and `$wire` syntax
 - **Fortify standalone**: Authentication backend via Laravel Fortify (headless)
-- **737 tests passing**, 4 skipped, 94.7% coverage
+- **839 tests passing**, 4 skipped, 94.7%+ coverage
 - **9 currencies** supported with India GST compliance
 - **Production Docker**: Multi-stage Dockerfile with Nginx-FPM and Chrome PDF service
 
@@ -618,17 +618,17 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 | 4 | ~~DeleteUser doesn't handle team ownership~~ | `app/Actions/Jetstream/DeleteUser.php` | **FIXED** — Prevents deletion when owned orgs have members, purges sole-owner orgs, 11 new tests |
 | 5 | ~~country_code type inconsistency~~ | Database schema | **FIXED** — All columns standardized to char(2) ISO 3166-1 alpha-2 in original migrations |
 
-### Medium
+### Medium — All Resolved
 
-| # | Issue | Location | Impact |
+| # | Issue | Location | Status |
 |---|-------|----------|--------|
-| 6 | **InvoiceForm broad exception handling in mount()** | `app/Livewire/InvoiceForm.php` (lines 69-79) | Catches all exceptions, could mask database or model issues. |
-| 7 | **OrganizationSetup redirects from render()** | `app/Livewire/OrganizationSetup.php` (line 445) | Redirecting from `render()` is unconventional and may cause Livewire issues. |
-| 8 | **array_column() on ContactCollection** | `app/Livewire/OrganizationSetup.php` (line 106) | Assumes specific structure. Should use ContactCollection API instead. |
-| 9 | **BankDetailsCast nullable inconsistency** | `app/Casts/BankDetailsCast.php` | `get()` always returns BankDetails instance, `set()` returns null for empty. |
-| 10 | **NumberingSeriesManager validation gap** | `app/Livewire/NumberingSeriesManager.php` | No validation that selected location belongs to selected organization. |
-| 11 | **LogoutOtherBrowserSessionsForm** | `app/Livewire/Profile/LogoutOtherBrowserSessionsForm.php` | Only works with database sessions, silently fails with other session drivers. |
-| 12 | **No event listeners registered** | App-wide | 10 team events exist but no listeners handle them. Events fire into void. |
+| 6 | ~~InvoiceForm broad exception handling in mount()~~ | `app/Livewire/Traits/InvoiceFormLogic.php` | **FIXED** — No try-catch in mount(); added null-safe operator for orphaned location relationships |
+| 7 | ~~OrganizationSetup redirects from render()~~ | `app/Livewire/OrganizationSetup.php` | **NON-ISSUE** — Redirect is in mount() (not render()), which is standard Livewire pattern |
+| 8 | ~~array_column() on ContactCollection~~ | `app/Livewire/OrganizationSetup.php` | **ALREADY FIXED** — Code uses `->getEmails()` ContactCollection API |
+| 9 | ~~BankDetailsCast nullable inconsistency~~ | `app/Casts/BankDetailsCast.php` | **FIXED** — `get()` now always returns BankDetails instance (empty() instead of null) |
+| 10 | ~~NumberingSeriesManager validation gap~~ | `app/Livewire/NumberingSeriesManager.php` | **ALREADY FIXED** — Lines 102-114 validate location belongs to organization |
+| 11 | ~~LogoutOtherBrowserSessionsForm~~ | `resources/views/profile/show.blade.php` | **FIXED** — Component only renders when session driver is 'database' |
+| 12 | ~~No event listeners registered~~ | `app/Models/Organization.php` | **FIXED** — Removed unused $dispatchesEvents and 3 empty event classes; kept action-dispatched events as extension points |
 
 ### Low
 
@@ -653,21 +653,19 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 
 ### Code Quality (Priority: Medium)
 
-6. **Break down large Livewire views**
-   - `invoice-form.blade.php` (63KB) should extract sub-components
-   - `organization-manager.blade.php` (36KB) should extract location form
-   - Extract shared location management component
+6. ~~**Break down large Livewire views**~~ — **DONE** (17 Blade partials extracted from 3 views)
+   - InvoiceForm: 6 partials (header, details, customer-address, items, attachments, email-modal)
+   - OrganizationManager: 6 partials (header, form-basics, form-country, form-location, form-bank-details, list)
+   - CustomerManager: 5 partials (header, form, locations, location-modal, list)
 
-7. **Extract shared location component**
-   - Both OrganizationManager and CustomerManager manage locations
-   - Create reusable Livewire component for location CRUD
+7. ~~**Extract shared location component**~~ — **DONE** (shared `partials/location-fields.blade.php`)
+   - Reusable Blade partial for location address fields
+   - Used by OrganizationManager form-location partial
 
-8. **Standardize country_code column types**
-   - Migrate all to consistent char(2) ISO 3166-1 alpha-2
+8. ~~**Standardize country_code column types**~~ — **DONE** (already char(2) across all tables)
+   - Verified: locations.country, teams.country_code, tax_templates.country_code all char(2)
 
-9. **Improve error handling in InvoiceForm mount()**
-   - Replace broad catch with specific exception handling
-   - Log properly, show user-friendly error
+9. ~~**Improve error handling in InvoiceForm mount()**~~ — **DONE** (no broad try-catch; added null-safe operators for orphaned relationships)
 
 10. **Add interface layer for services**
     - Create `PdfGeneratorInterface`, `NumberingServiceInterface`
@@ -675,23 +673,23 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 
 ### Testing (Priority: Medium)
 
-11. **Add security isolation tests**
-    - Cross-tenant access prevention tests
-    - Policy enforcement tests for all models
-    - OrganizationScope bypass scenarios
+11. ~~**Add security isolation tests**~~ — **DONE** (46 + 16 = 62 tests)
+    - `tests/Feature/Security/SecurityIsolationTest.php` (46 tests)
+    - `tests/Feature/Security/OnboardingFlowTest.php` (16 tests)
 
-12. **Add PDF service integration tests**
-    - Currently skipped when Chrome unavailable
-    - Add mock-based tests for PDF generation flow
+12. ~~**Add PDF service integration tests**~~ — **DONE** (10 tests)
+    - Mock-based HTTP service flow, error handling (ConnectionException, RequestException)
+    - Download response headers, Chrome disabled handling
+    - `tests/Feature/Services/PdfServiceIntegrationTest.php`
 
-13. **Add email attachment tests**
-    - Verify PDF attachment inclusion
-    - Test custom body and CC recipients
+13. ~~**Add email attachment tests**~~ — **DONE** (12 tests)
+    - CC recipients, custom body/subject, multiple recipients, public URLs
+    - `tests/Feature/Mail/DocumentMailerIntegrationTest.php`
 
-14. **Add edge case tests for numbering service**
-    - Concurrent number generation
-    - Reset frequency edge cases
-    - Financial year boundary transitions
+14. ~~**Add edge case tests for numbering service**~~ — **DONE** (17 tests)
+    - Monthly/FY reset boundaries, FY validation errors
+    - Format tokens (DAY, MONTH:3, FY, FY_START, FY_END), createDefaultSeries idempotency
+    - `tests/Feature/Services/NumberingServiceEdgeCaseTest.php`
 
 ### Performance (Priority: Low)
 
@@ -730,7 +728,12 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 - [x] Fix all Critical and High bugs (items 1-5) — **DONE**
 - [x] Register all policies explicitly — **DONE**
 - [x] Add team_user FK constraints — **DONE**
-- [ ] Security isolation test suite
+- [x] Security isolation test suite — **DONE** (62 tests)
+- [x] PDF service integration tests — **DONE** (10 tests)
+- [x] Email attachment tests — **DONE** (12 tests)
+- [x] Numbering service edge case tests — **DONE** (17 tests)
+- [x] Break down large Livewire views — **DONE** (17 partials)
+- [x] Standardize country_code columns — **DONE** (already consistent)
 - [ ] Fix medium bugs (items 6-12)
 - [ ] Add rate limiting to password reset
 
@@ -785,5 +788,6 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 
 **Document Status**: Comprehensive audit complete
 **Branch**: `with-jetstream` (post-Jetstream removal, Livewire v4)
-**Last Test Run**: 738 passing, 4 skipped, 94.7% coverage
+**Last Test Run**: 839 passing, 4 skipped, 94.7%+ coverage
 **Last Bug Fix Session**: 2026-02-24 — All critical & high bugs resolved
+**Last Test Session**: 2026-02-24 — PRD improvements #6-8, #11-14 completed (101 new tests)
