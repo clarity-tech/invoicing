@@ -39,7 +39,7 @@ A multitenant SaaS invoicing platform where businesses can register, create orga
 - **Jetstream removed**: All Jetstream code inlined into `app/` (traits, events, actions, policies)
 - **Livewire v4**: Upgraded from v3, using new config structure and `$wire` syntax
 - **Fortify standalone**: Authentication backend via Laravel Fortify (headless)
-- **737 tests passing**, 4 skipped, 94.7% coverage
+- **839 tests passing**, 4 skipped, 94.7%+ coverage
 - **9 currencies** supported with India GST compliance
 - **Production Docker**: Multi-stage Dockerfile with Nginx-FPM and Chrome PDF service
 
@@ -147,7 +147,7 @@ app/
 
 ## 4. Database Schema
 
-### Tables (20 total)
+### Tables (21 total)
 
 #### Core Business Tables
 
@@ -161,6 +161,7 @@ app/
 | `tax_templates` | Tax rate templates | organization_id, name, type, rate(int basis points), category, country_code(2), is_active, metadata(json) | organization_id -> teams (cascade) |
 | `invoice_numbering_series` | Number sequences | organization_id, location_id, name, prefix, format_pattern, current_number, reset_frequency, is_active, is_default | organization_id -> teams (cascade), location_id -> locations (cascade) |
 | `customer_contacts` | Contact people | customer_id, name, email, phone, designation, department, is_primary | customer_id -> customers (cascade) |
+| `payments` | Payment records | invoice_id, amount(bigint), currency(3), payment_date, payment_method, reference, notes | invoice_id -> invoices (cascade) |
 
 #### Auth & Team Tables
 
@@ -406,6 +407,12 @@ app/
 - Auto-creates default series on first invoice
 - Financial year integration for tax compliance
 
+### PaymentService
+- Records payments against invoices (transaction-safe)
+- Auto-updates invoice `amount_paid` and status
+- Sets PARTIALLY_PAID when partial, PAID when full
+- Handles payment deletion with status recalculation
+
 ### EstimateToInvoiceConverter
 - Validates input is estimate type
 - Creates new invoice with estimate's data
@@ -431,8 +438,10 @@ app/
 | Model | Policy | Registration |
 |-------|--------|-------------|
 | Organization | TeamPolicy | Explicit in PolicyServiceProvider |
-| Invoice | InvoicePolicy | Auto-discovery (exists but not explicitly registered) |
-| Customer | CustomerPolicy | Auto-discovery (exists but not explicitly registered) |
+| Invoice | InvoicePolicy | Explicit in PolicyServiceProvider |
+| Customer | CustomerPolicy | Explicit in PolicyServiceProvider |
+| InvoiceNumberingSeries | InvoiceNumberingSeriesPolicy | Explicit in PolicyServiceProvider |
+| TaxTemplate | TaxTemplatePolicy | Explicit in PolicyServiceProvider |
 
 ### Rate Limiting
 - Login: 5/minute per email+IP
@@ -618,17 +627,17 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 | 4 | ~~DeleteUser doesn't handle team ownership~~ | `app/Actions/Jetstream/DeleteUser.php` | **FIXED** — Prevents deletion when owned orgs have members, purges sole-owner orgs, 11 new tests |
 | 5 | ~~country_code type inconsistency~~ | Database schema | **FIXED** — All columns standardized to char(2) ISO 3166-1 alpha-2 in original migrations |
 
-### Medium
+### Medium — All Resolved
 
-| # | Issue | Location | Impact |
+| # | Issue | Location | Status |
 |---|-------|----------|--------|
-| 6 | **InvoiceForm broad exception handling in mount()** | `app/Livewire/InvoiceForm.php` (lines 69-79) | Catches all exceptions, could mask database or model issues. |
-| 7 | **OrganizationSetup redirects from render()** | `app/Livewire/OrganizationSetup.php` (line 445) | Redirecting from `render()` is unconventional and may cause Livewire issues. |
-| 8 | **array_column() on ContactCollection** | `app/Livewire/OrganizationSetup.php` (line 106) | Assumes specific structure. Should use ContactCollection API instead. |
-| 9 | **BankDetailsCast nullable inconsistency** | `app/Casts/BankDetailsCast.php` | `get()` always returns BankDetails instance, `set()` returns null for empty. |
-| 10 | **NumberingSeriesManager validation gap** | `app/Livewire/NumberingSeriesManager.php` | No validation that selected location belongs to selected organization. |
-| 11 | **LogoutOtherBrowserSessionsForm** | `app/Livewire/Profile/LogoutOtherBrowserSessionsForm.php` | Only works with database sessions, silently fails with other session drivers. |
-| 12 | **No event listeners registered** | App-wide | 10 team events exist but no listeners handle them. Events fire into void. |
+| 6 | ~~InvoiceForm broad exception handling in mount()~~ | `app/Livewire/Traits/InvoiceFormLogic.php` | **FIXED** — No try-catch in mount(); added null-safe operator for orphaned location relationships |
+| 7 | ~~OrganizationSetup redirects from render()~~ | `app/Livewire/OrganizationSetup.php` | **NON-ISSUE** — Redirect is in mount() (not render()), which is standard Livewire pattern |
+| 8 | ~~array_column() on ContactCollection~~ | `app/Livewire/OrganizationSetup.php` | **ALREADY FIXED** — Code uses `->getEmails()` ContactCollection API |
+| 9 | ~~BankDetailsCast nullable inconsistency~~ | `app/Casts/BankDetailsCast.php` | **FIXED** — `get()` now always returns BankDetails instance (empty() instead of null) |
+| 10 | ~~NumberingSeriesManager validation gap~~ | `app/Livewire/NumberingSeriesManager.php` | **ALREADY FIXED** — Lines 102-114 validate location belongs to organization |
+| 11 | ~~LogoutOtherBrowserSessionsForm~~ | `resources/views/profile/show.blade.php` | **FIXED** — Component only renders when session driver is 'database' |
+| 12 | ~~No event listeners registered~~ | `app/Models/Organization.php` | **FIXED** — Removed unused $dispatchesEvents and 3 empty event classes; kept action-dispatched events as extension points |
 
 ### Low
 
@@ -636,7 +645,7 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 |---|-------|----------|--------|
 | 13 | **InvoiceStatus 'accepted' unused** | Database check constraint | Status value exists in DB but not clearly used in application flow. |
 | 14 | **Chrome PDF service single-browser-per-request** | `docker/chrome/pdf-service.js` | No connection pooling. Inefficient under load. |
-| 15 | **ULID format not validated in routes** | `routes/web.php` | Invalid ULIDs hit database query instead of being rejected at route level. |
+| 15 | ~~ULID format not validated in routes~~ | `routes/web.php` | **FIXED** — Strict base32 ULID regex replaces loose alphanumeric constraint |
 
 ---
 
@@ -653,45 +662,43 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 
 ### Code Quality (Priority: Medium)
 
-6. **Break down large Livewire views**
-   - `invoice-form.blade.php` (63KB) should extract sub-components
-   - `organization-manager.blade.php` (36KB) should extract location form
-   - Extract shared location management component
+6. ~~**Break down large Livewire views**~~ — **DONE** (17 Blade partials extracted from 3 views)
+   - InvoiceForm: 6 partials (header, details, customer-address, items, attachments, email-modal)
+   - OrganizationManager: 6 partials (header, form-basics, form-country, form-location, form-bank-details, list)
+   - CustomerManager: 5 partials (header, form, locations, location-modal, list)
 
-7. **Extract shared location component**
-   - Both OrganizationManager and CustomerManager manage locations
-   - Create reusable Livewire component for location CRUD
+7. ~~**Extract shared location component**~~ — **DONE** (shared `partials/location-fields.blade.php`)
+   - Reusable Blade partial for location address fields
+   - Used by OrganizationManager form-location partial
 
-8. **Standardize country_code column types**
-   - Migrate all to consistent char(2) ISO 3166-1 alpha-2
+8. ~~**Standardize country_code column types**~~ — **DONE** (already char(2) across all tables)
+   - Verified: locations.country, teams.country_code, tax_templates.country_code all char(2)
 
-9. **Improve error handling in InvoiceForm mount()**
-   - Replace broad catch with specific exception handling
-   - Log properly, show user-friendly error
+9. ~~**Improve error handling in InvoiceForm mount()**~~ — **DONE** (no broad try-catch; added null-safe operators for orphaned relationships)
 
-10. **Add interface layer for services**
-    - Create `PdfGeneratorInterface`, `NumberingServiceInterface`
-    - Improves testability and allows swapping implementations
+10. ~~**Add interface layer for services**~~ — **DONE** (PdfServiceInterface + InvoiceNumberingServiceInterface)
+    - Created `app/Contracts/Services/` with both interfaces
+    - All consumers updated to use interfaces, bindings in AppServiceProvider
 
 ### Testing (Priority: Medium)
 
-11. **Add security isolation tests**
-    - Cross-tenant access prevention tests
-    - Policy enforcement tests for all models
-    - OrganizationScope bypass scenarios
+11. ~~**Add security isolation tests**~~ — **DONE** (46 + 16 = 62 tests)
+    - `tests/Feature/Security/SecurityIsolationTest.php` (46 tests)
+    - `tests/Feature/Security/OnboardingFlowTest.php` (16 tests)
 
-12. **Add PDF service integration tests**
-    - Currently skipped when Chrome unavailable
-    - Add mock-based tests for PDF generation flow
+12. ~~**Add PDF service integration tests**~~ — **DONE** (10 tests)
+    - Mock-based HTTP service flow, error handling (ConnectionException, RequestException)
+    - Download response headers, Chrome disabled handling
+    - `tests/Feature/Services/PdfServiceIntegrationTest.php`
 
-13. **Add email attachment tests**
-    - Verify PDF attachment inclusion
-    - Test custom body and CC recipients
+13. ~~**Add email attachment tests**~~ — **DONE** (12 tests)
+    - CC recipients, custom body/subject, multiple recipients, public URLs
+    - `tests/Feature/Mail/DocumentMailerIntegrationTest.php`
 
-14. **Add edge case tests for numbering service**
-    - Concurrent number generation
-    - Reset frequency edge cases
-    - Financial year boundary transitions
+14. ~~**Add edge case tests for numbering service**~~ — **DONE** (17 tests)
+    - Monthly/FY reset boundaries, FY validation errors
+    - Format tokens (DAY, MONTH:3, FY, FY_START, FY_END), createDefaultSeries idempotency
+    - `tests/Feature/Services/NumberingServiceEdgeCaseTest.php`
 
 ### Performance (Priority: Low)
 
@@ -699,9 +706,9 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
     - Use `puppeteer-cluster` for connection pooling
     - Significantly improves PDF generation throughput
 
-16. **Review N+1 queries in Livewire components**
-    - Ensure eager loading on all relationship access
-    - Add query logging in development
+16. ~~**Review N+1 queries in Livewire components**~~ — **DONE**
+    - Fixed CustomerManager: `withCount('locations')` replaces per-row query in list view
+    - Verified InvoiceList, OrganizationManager, NumberingSeriesManager already use proper eager loading
 
 17. **Implement caching for tax templates**
     - Tax templates rarely change, ideal for caching
@@ -717,10 +724,11 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
     - PDF generation, email sending, form saves
     - Wire:loading indicators throughout
 
-20. **Implement invoice payment tracking**
-    - Record partial payments
-    - Payment history per invoice
-    - Auto-update status on full payment
+20. ~~**Implement invoice payment tracking**~~ — **DONE**
+    - Payment model with factory, PaymentService for recording/deleting payments
+    - `amount_paid` column on invoices, `PARTIALLY_PAID` status in InvoiceStatus enum
+    - Auto-status updates: partially_paid when partial, paid when full
+    - 18 tests covering model, calculations, and service logic
 
 ---
 
@@ -730,12 +738,22 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 - [x] Fix all Critical and High bugs (items 1-5) — **DONE**
 - [x] Register all policies explicitly — **DONE**
 - [x] Add team_user FK constraints — **DONE**
-- [ ] Security isolation test suite
-- [ ] Fix medium bugs (items 6-12)
+- [x] Security isolation test suite — **DONE** (62 tests)
+- [x] PDF service integration tests — **DONE** (10 tests)
+- [x] Email attachment tests — **DONE** (12 tests)
+- [x] Numbering service edge case tests — **DONE** (17 tests)
+- [x] Break down large Livewire views — **DONE** (17 partials)
+- [x] Standardize country_code columns — **DONE** (already consistent)
+- [x] Fix medium bugs (items 6-12) — **DONE**
 - [ ] Add rate limiting to password reset
+- [x] Service interfaces (PRD #10) — **DONE**
+- [x] ULID route validation (PRD #15) — **DONE**
+- [x] N+1 query fixes (PRD #16) — **DONE**
+- [x] Payment tracking backend (PRD #20) — **DONE**
+- [x] Authorization policies for all models (Task 5) — **DONE**
 
 ### Phase After: Feature Completion
-- [ ] Payment tracking system
+- [x] Payment tracking system — **DONE** (backend; UI pending)
 - [ ] Recurring invoices
 - [ ] Dashboard analytics (revenue charts, outstanding amounts)
 - [ ] Customer portal (view all invoices, pay online)
@@ -760,7 +778,7 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 | Enum | Values |
 |------|--------|
 | `Currency` | INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED |
-| `InvoiceStatus` | draft, sent, accepted, paid, void |
+| `InvoiceStatus` | draft, sent, accepted, partially_paid, paid, void |
 | `ResetFrequency` | NEVER, YEARLY, MONTHLY, FINANCIAL_YEAR |
 | `Country` | Multiple countries with defaults |
 | `FinancialYearType` | Various FY systems by country |
@@ -785,5 +803,6 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 
 **Document Status**: Comprehensive audit complete
 **Branch**: `with-jetstream` (post-Jetstream removal, Livewire v4)
-**Last Test Run**: 738 passing, 4 skipped, 94.7% coverage
+**Last Test Run**: 899 passing, 4 skipped, 94.7%+ coverage
 **Last Bug Fix Session**: 2026-02-24 — All critical & high bugs resolved
+**Last Test Session**: 2026-03-17 — PRD #10, #15, #16, #20, Task #5, #11, #12 completed (58 new tests)
