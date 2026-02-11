@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Location;
 use App\Models\Organization;
 use App\Models\User;
+use App\ValueObjects\BankDetails;
 use App\ValueObjects\ContactCollection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -45,6 +46,15 @@ class ProductionUserSeeder extends Seeder
             'financial_year_start_day' => 1,
             'setup_completed_at' => now(),
             'notes' => 'Technology solutions company based in Assam, India specializing in software development and consulting.',
+            'bank_details' => new BankDetails(
+                accountName: 'Clarity Technologies',
+                accountNumber: '654902 0000 1952',
+                bankName: 'Bank of Baroda',
+                ifsc: 'BARB0VJGOLA',
+                branch: 'GOLAGHAT',
+                swift: 'BARBINBBATR',
+                pan: 'ASBPB0118P',
+            ),
         ]);
 
         // Set current team for the owner

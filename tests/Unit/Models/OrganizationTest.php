@@ -530,3 +530,60 @@ test('organization currency enum integration works correctly', function () {
         expect($organization->currency->name())->toBe($currency->name());
     }
 });
+
+test('organization hasBankDetails returns true when bank details with bank_name exist', function () {
+    $organization = createOrganizationWithLocation([
+        'bank_details' => [
+            'account_name' => 'Test Company',
+            'account_number' => '1234567890',
+            'bank_name' => 'Test Bank',
+            'ifsc' => 'TEST0001',
+        ],
+    ]);
+
+    expect($organization->hasBankDetails())->toBeTrue();
+});
+
+test('organization hasBankDetails returns false when bank details is null', function () {
+    $organization = createOrganizationWithLocation([
+        'bank_details' => null,
+    ]);
+
+    expect($organization->hasBankDetails())->toBeFalse();
+});
+
+test('organization hasBankDetails returns false when bank_name is missing', function () {
+    $organization = createOrganizationWithLocation([
+        'bank_details' => [
+            'account_name' => 'Test Company',
+            'account_number' => '1234567890',
+        ],
+    ]);
+
+    expect($organization->hasBankDetails())->toBeFalse();
+});
+
+test('organization bank_details is cast to BankDetails value object', function () {
+    $bankDetails = [
+        'account_name' => 'Clarity Technologies',
+        'account_number' => '654902 0000 1952',
+        'bank_name' => 'Bank of Baroda',
+        'ifsc' => 'BARB0VJGOLA',
+        'branch' => 'GOLAGHAT',
+        'swift' => 'BARBINBBATR',
+        'pan' => 'ASBPB0118P',
+    ];
+
+    $organization = createOrganizationWithLocation([
+        'bank_details' => $bankDetails,
+    ]);
+
+    expect($organization->bank_details)->toBeInstanceOf(\App\ValueObjects\BankDetails::class);
+    expect($organization->bank_details->bankName)->toBe('Bank of Baroda');
+    expect($organization->bank_details->ifsc)->toBe('BARB0VJGOLA');
+    expect($organization->bank_details->accountName)->toBe('Clarity Technologies');
+    expect($organization->bank_details->accountNumber)->toBe('654902 0000 1952');
+    expect($organization->bank_details->branch)->toBe('GOLAGHAT');
+    expect($organization->bank_details->swift)->toBe('BARBINBBATR');
+    expect($organization->bank_details->pan)->toBe('ASBPB0118P');
+});
