@@ -3,9 +3,9 @@
 ## 1. Project Overview
 
 - **Inspiration**: Zoho Books
-- **Stack**: Laravel 12, PHP 8.4, PostgreSQL, Livewire 3, Pest
-- **UI**: `luvi-ui/laravel-luvi`
-- **Packages**: `akaunting/laravel-money`, Yarn 4 (via corepack)
+- **Stack**: Laravel 12, PHP 8.4, PostgreSQL, Vue 3, Inertia.js, Pest
+- **UI**: Vue 3 + Tailwind CSS (shadcn-vue compatible)
+- **Packages**: `akaunting/laravel-money`, `inertiajs/inertia-laravel`, `@inertiajs/vue3`, Yarn 4 (via corepack)
 - **Schema**: Polymorphic locations, **JSON column for emails with Value Objects**.
 - **Core Features**:
     - Company & Customer CRUD with multiple locations & emails.
@@ -42,10 +42,12 @@
 - **Mailers**: `DocumentMailer` Mailable class.
 - **Pest Tests**: Cover the custom cast, Value Object logic, and all core features.
 
-### D. Livewire UI/UX (using Luvi UI which is shadcn look and feel for livewire) Fetch latest documentation to know about the unknown things
+### D. Vue/Inertia UI/UX (using Tailwind CSS with shadcn-vue style components)
 
-- **Components**:
-    - Company/Customer CRUD with a nested component to manage the `emails` collection.
+- **Pages** (in `resources/js/Pages/`):
+    - Company/Customer CRUD with nested components to manage the `emails` collection.
     - A unified wizard for creating Estimates & Invoices.
     - **Email Modal**: To select recipients from the customer's `EmailCollection`.
+- **Layouts** (in `resources/js/Layouts/`): Shared app layout with navigation.
+- **Components** (in `resources/js/Components/`): Reusable Vue components.
 - **Public View**: Routes (`/invoices/{uuid}` and `/estimates/{uuid}`) to display documents.
