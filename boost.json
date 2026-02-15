@@ -14,7 +14,8 @@
     "skills": [
         "livewire-development",
         "pest-testing",
-        "developing-with-fortify",
+        "tailwindcss-development",
+        "fortify-development",
         "medialibrary-development"
     ]
 }
