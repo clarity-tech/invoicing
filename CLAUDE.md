@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PHP Version**: 8.5.2
 - **Database**: PostgreSQL
 - **UI Framework**: Livewire 4.1.4 + luvi-ui/laravel-luvi (shadcn for Livewire)
-- **Testing**: Pest
-- **Package Manager**: npm
+- **Testing**: Pest (backend), Vitest (frontend)
+- **Package Manager**: Bun
 - **Container**: Laravel Sail
 
 ### Key Packages
@@ -150,13 +150,22 @@ sail pint --test
 ### Frontend Commands
 ```bash
 # Install dependencies
-sail npm install
+sail bun install
 
 # Development build
-sail npm run dev
+sail bun run dev
 
 # Production build
-sail npm run build
+sail bun run build
+
+# Run frontend tests (Vitest)
+sail bun run test
+
+# Run frontend tests in watch mode
+sail bun run test:watch
+
+# Run frontend tests with coverage
+sail bun run test:coverage
 ```
 
 ### Shell Access
@@ -525,7 +534,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/prompts (PROMPTS) - v0
 - laravel/sanctum (SANCTUM) - v4
 - laravel/wayfinder (WAYFINDER) - v0
-- livewire/livewire (LIVEWIRE) - v4
 - laravel/boost (BOOST) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pail (PAIL) - v1
@@ -535,7 +543,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
 - @inertiajs/vue3 (INERTIA_VUE) - v2
-- alpinejs (ALPINEJS) - v3
 - vue (VUE) - v3
 - tailwindcss (TAILWINDCSS) - v4
 
@@ -544,7 +551,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
 - `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
-- `livewire-development` — Use for any task or question involving Livewire. Activate if user mentions Livewire, wire: directives, or Livewire-specific concepts like wire:model, wire:click, wire:sort, or islands, invoke this skill. Covers building new components, debugging reactivity issues, real-time form validation, drag-and-drop, loading states, migrating from Livewire 3 to 4, converting component formats (SFC/MFC/class-based), and performance optimization. Do not use for non-Livewire reactive UI (React, Vue, Alpine-only, Inertia.js) or standard Laravel forms without Livewire.
 - `pest-testing` — Use this skill for Pest PHP testing in Laravel projects only. Trigger whenever any test is being written, edited, fixed, or refactored — including fixing tests that broke after a code change, adding assertions, converting PHPUnit to Pest, adding datasets, and TDD workflows. Always activate when the user asks how to write something in Pest, mentions test files or directories (tests/Feature, tests/Unit, tests/Browser), or needs browser testing, smoke testing multiple pages for JS errors, or architecture tests. Covers: it()/expect() syntax, datasets, mocking, browser testing (visit/click/fill), smoke testing, arch(), Livewire component tests, RefreshDatabase, and all Pest 4 features. Do not use for factories, seeders, migrations, controllers, models, or non-test PHP code.
 - `inertia-vue-development` — Develops Inertia.js v2 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using <Link>, <Form>, useForm, or router; working with deferred props, prefetching, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
 - `tailwindcss-development` — Always invoke when the user's message includes 'tailwind' in any form. Also invoke for: building responsive grid layouts (multi-column card grids, product grids), flex/grid page structures (dashboards with sidebars, fixed topbars, mobile-toggle navs), styling UI components (cards, tables, navbars, pricing sections, forms, inputs, badges), adding dark mode variants, fixing spacing or typography, and Tailwind v3/v4 work. The core use case: writing or fixing Tailwind utility classes in HTML templates (Blade, JSX, Vue). Skip for backend PHP logic, database queries, API routes, JavaScript with no HTML/CSS component, CSS file audits, build tool configuration, and vanilla CSS.
@@ -568,7 +574,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 ## Frontend Bundling
 
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `vendor/bin/sail npm run build`, `vendor/bin/sail npm run dev`, or `vendor/bin/sail composer run dev`. Ask them.
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `vendor/bin/sail bun run build`, `vendor/bin/sail bun run dev`, or `vendor/bin/sail composer run dev`. Ask them.
 
 ## Documentation Files
 
@@ -669,7 +675,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Always prefix PHP, Artisan, Composer, and Node commands with `vendor/bin/sail`. Examples:
     - Run Artisan Commands: `vendor/bin/sail artisan migrate`
     - Install Composer packages: `vendor/bin/sail composer install`
-    - Execute Node commands: `vendor/bin/sail npm run dev`
+    - Execute Node commands: `vendor/bin/sail bun run dev`
     - Execute PHP scripts: `vendor/bin/sail php [script]`
 - View all available Sail commands by running `vendor/bin/sail` without arguments.
 
@@ -748,7 +754,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## Vite Error
 
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `vendor/bin/sail npm run build` or ask the user to run `vendor/bin/sail npm run dev` or `vendor/bin/sail composer run dev`.
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `vendor/bin/sail bun run build` or ask the user to run `vendor/bin/sail bun run dev` or `vendor/bin/sail composer run dev`.
 
 === octane/core rules ===
 
@@ -779,14 +785,6 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
 - Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
 - Inertia: Use `.form()` with `<Form>` component or `form.submit(store())` with useForm.
-
-=== livewire/core rules ===
-
-# Livewire
-
-- Livewire allow to build dynamic, reactive interfaces in PHP without writing JavaScript.
-- You can use Alpine.js for client-side interactions instead of JavaScript frameworks.
-- Keep state server-side so the UI reflects it. Validate and authorize in actions as you would in HTTP requests.
 
 === pint/core rules ===
 
