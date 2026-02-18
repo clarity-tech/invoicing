@@ -1,0 +1,307 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import CustomerForm from '@/Components/CustomerForm.vue';
+import LocationModal from '@/Components/LocationModal.vue';
+import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import type { Customer, Location, Contact } from '@/types';
+
+interface PaginatedCustomers {
+    data: (Customer & { locations_count: number })[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: { url: string | null; label: string; active: boolean }[];
+}
+
+const props = defineProps<{
+    customers: PaginatedCustomers;
+    currencies: Record<string, string>;
+    countries: Record<string, string>;
+}>();
+
+// Customer form state
+const showForm = ref(false);
+const editingCustomer = ref<Customer | null>(null);
+
+const form = useForm({
+    name: '',
+    phone: '',
+    currency: 'INR',
+    contacts: [{ name: '', email: '' }] as Contact[],
+});
+
+function openCreate() {
+    editingCustomer.value = null;
+    form.reset();
+    form.contacts = [{ name: '', email: '' }];
+    form.clearErrors();
+    showForm.value = true;
+}
+
+function openEdit(customer: Customer) {
+    editingCustomer.value = customer;
+    form.name = customer.name;
+    form.phone = customer.phone ?? '';
+    form.currency = customer.currency ?? 'INR';
+    form.contacts = customer.emails?.length ? [...customer.emails] : [{ name: '', email: '' }];
+    form.clearErrors();
+    showForm.value = true;
+}
+
+function submitCustomer() {
+    if (editingCustomer.value) {
+        form.put(`/customers/${editingCustomer.value.id}`, {
+            preserveScroll: true,
+            onSuccess: () => { showForm.value = false; },
+        });
+    } else {
+        form.post('/customers', {
+            preserveScroll: true,
+            onSuccess: () => { showForm.value = false; },
+        });
+    }
+}
+
+function cancelForm() {
+    showForm.value = false;
+}
+
+// Delete state
+const confirmingDelete = ref(false);
+const customerToDelete = ref<Customer | null>(null);
+
+function confirmDelete(customer: Customer) {
+    customerToDelete.value = customer;
+    confirmingDelete.value = true;
+}
+
+function deleteCustomer() {
+    if (!customerToDelete.value) return;
+    router.delete(`/customers/${customerToDelete.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => { confirmingDelete.value = false; customerToDelete.value = null; },
+    });
+}
+
+// Location modal state
+const showLocationModal = ref(false);
+const locationCustomerId = ref<number>(0);
+const editingLocation = ref<Location | null>(null);
+
+// Expanded rows for showing locations
+const expandedRows = ref<Set<number>>(new Set());
+
+function toggleExpand(customerId: number) {
+    if (expandedRows.value.has(customerId)) {
+        expandedRows.value.delete(customerId);
+    } else {
+        expandedRows.value.add(customerId);
+        // Reload the page to get fresh location data
+        router.reload({ only: ['customers'] });
+    }
+}
+
+function openAddLocation(customerId: number) {
+    locationCustomerId.value = customerId;
+    editingLocation.value = null;
+    showLocationModal.value = true;
+}
+
+function openEditLocation(customerId: number, location: Location) {
+    locationCustomerId.value = customerId;
+    editingLocation.value = location;
+    showLocationModal.value = true;
+}
+
+function closeLocationModal() {
+    showLocationModal.value = false;
+    editingLocation.value = null;
+}
+
+function deleteLocation(customerId: number, locationId: number) {
+    if (confirm('Are you sure you want to delete this location?')) {
+        router.delete(`/customers/${customerId}/locations/${locationId}`, {
+            preserveScroll: true,
+        });
+    }
+}
+
+function setPrimary(customerId: number, locationId: number) {
+    router.post(`/customers/${customerId}/primary-location/${locationId}`, {}, {
+        preserveScroll: true,
+    });
+}
+
+function primaryEmail(customer: Customer): string {
+    return customer.emails?.[0]?.email ?? '';
+}
+
+function locationSummary(customer: Customer): string {
+    const loc = customer.primary_location;
+    if (!loc) return '-';
+    return [loc.city, loc.state].filter(Boolean).join(', ');
+}
+</script>
+
+<template>
+    <AppLayout title="Customers">
+        <template #header>
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold leading-tight text-gray-800">Customers</h2>
+                <button
+                    type="button"
+                    class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+                    @click="openCreate"
+                >
+                    Add Customer
+                </button>
+            </div>
+        </template>
+
+        <div class="py-4">
+            <!-- Customer Form Modal -->
+            <Teleport to="body">
+                <div v-if="showForm" class="fixed inset-0 z-50 overflow-y-auto">
+                    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="cancelForm" />
+                        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+                        <div class="relative inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl sm:align-middle">
+                            <div class="bg-white px-4 pb-4 pt-5 sm:p-6">
+                                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
+                                    {{ editingCustomer ? 'Edit Customer' : 'Add Customer' }}
+                                </h3>
+                                <CustomerForm
+                                    :form="form"
+                                    :currencies="currencies"
+                                    :countries="countries"
+                                    :is-editing="!!editingCustomer"
+                                    @submit="submitCustomer"
+                                    @cancel="cancelForm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Teleport>
+
+            <!-- Customer Table -->
+            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="w-8 px-3 py-3"></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Currency</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Location</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        <template v-for="customer in customers.data" :key="customer.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-4">
+                                    <button
+                                        v-if="customer.locations_count > 0"
+                                        type="button"
+                                        class="text-gray-400 hover:text-gray-600"
+                                        @click="toggleExpand(customer.id)"
+                                    >
+                                        <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-90': expandedRows.has(customer.id) }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ customer.name }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ primaryEmail(customer) }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ customer.phone ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ customer.currency ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ locationSummary(customer) }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                                    <button type="button" class="text-brand-600 hover:text-brand-900 mr-3" @click="openAddLocation(customer.id)">+ Location</button>
+                                    <button type="button" class="text-brand-600 hover:text-brand-900 mr-3" @click="openEdit(customer)">Edit</button>
+                                    <button type="button" class="text-red-600 hover:text-red-900" @click="confirmDelete(customer)">Delete</button>
+                                </td>
+                            </tr>
+                            <!-- Expanded locations -->
+                            <tr v-if="expandedRows.has(customer.id) && customer.locations?.length">
+                                <td colspan="7" class="bg-gray-50 px-6 py-3">
+                                    <div class="text-xs font-medium uppercase text-gray-500 mb-2">Locations ({{ customer.locations.length }})</div>
+                                    <div v-for="loc in customer.locations" :key="loc.id" class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                                        <div class="text-sm">
+                                            <span class="font-medium text-gray-900">{{ loc.name }}</span>
+                                            <span v-if="customer.primary_location_id === loc.id" class="ml-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Primary</span>
+                                            <span class="text-gray-500 ml-2">{{ loc.address_line_1 }}, {{ loc.city }}, {{ loc.state }}</span>
+                                            <span v-if="loc.gstin" class="text-gray-400 ml-2">GSTIN: {{ loc.gstin }}</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button v-if="customer.primary_location_id !== loc.id" type="button" class="text-xs text-brand-600 hover:text-brand-900" @click="setPrimary(customer.id, loc.id)">Set Primary</button>
+                                            <button type="button" class="text-xs text-brand-600 hover:text-brand-900" @click="openEditLocation(customer.id, loc)">Edit</button>
+                                            <button type="button" class="text-xs text-red-600 hover:text-red-900" @click="deleteLocation(customer.id, loc.id)">Delete</button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr v-if="customers.data.length === 0">
+                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                                No customers yet. Click "Add Customer" to create one.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <nav v-if="customers.last_page > 1" class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    <div class="hidden sm:block">
+                        <p class="text-sm text-gray-700">
+                            Showing page <span class="font-medium">{{ customers.current_page }}</span> of <span class="font-medium">{{ customers.last_page }}</span>
+                            ({{ customers.total }} total)
+                        </p>
+                    </div>
+                    <div class="flex flex-1 justify-between sm:justify-end gap-2">
+                        <template v-for="link in customers.links" :key="link.label">
+                            <button
+                                v-if="link.url"
+                                type="button"
+                                class="relative inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium"
+                                :class="link.active ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+                                @click="router.get(link.url!)"
+                                v-html="link.label"
+                            />
+                            <span
+                                v-else
+                                class="relative inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400"
+                                v-html="link.label"
+                            />
+                        </template>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Location Modal -->
+        <LocationModal
+            :show="showLocationModal"
+            :customer-id="locationCustomerId"
+            :location="editingLocation"
+            :countries="countries"
+            @close="closeLocationModal"
+        />
+
+        <!-- Delete Confirmation -->
+        <ConfirmationModal
+            :show="confirmingDelete"
+            title="Delete Customer"
+            message="Are you sure you want to delete this customer? This action cannot be undone."
+            confirm-label="Delete"
+            :destructive="true"
+            @confirm="deleteCustomer"
+            @cancel="confirmingDelete = false"
+        />
+    </AppLayout>
+</template>
