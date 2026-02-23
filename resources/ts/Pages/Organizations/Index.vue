@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 
@@ -72,6 +73,8 @@ const props = defineProps<{
 
 const activeTab = ref<'basics' | 'location' | 'bank' | 'logo'>('basics');
 const editingOrg = ref<Organization | null>(null);
+const confirmingOrgDelete = ref(false);
+const orgToDelete = ref<Organization | null>(null);
 
 const basicsForm = useForm({
     name: '',
@@ -227,9 +230,16 @@ function removeLogo(): void {
     });
 }
 
-function deleteOrg(org: Organization): void {
-    if (!confirm('Are you sure you want to delete this organization?')) return;
-    router.delete(`/organizations/${org.id}`);
+function confirmDeleteOrg(org: Organization): void {
+    orgToDelete.value = org;
+    confirmingOrgDelete.value = true;
+}
+
+function deleteOrg(): void {
+    if (!orgToDelete.value) return;
+    router.delete(`/organizations/${orgToDelete.value.id}`, {
+        onSuccess: () => { confirmingOrgDelete.value = false; orgToDelete.value = null; },
+    });
 }
 
 function onLogoChange(event: Event): void {
@@ -275,7 +285,7 @@ function onLogoChange(event: Event): void {
                             :key="tab.key"
                             type="button"
                             class="border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap"
-                            :class="activeTab === tab.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                            :class="activeTab === tab.key ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
                             @click="activeTab = tab.key as typeof activeTab"
                         >
                             {{ tab.label }}
@@ -289,34 +299,34 @@ function onLogoChange(event: Event): void {
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Name *</label>
-                                <input v-model="basicsForm.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="basicsForm.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="basicsForm.errors.name" class="mt-1 text-sm text-red-600">{{ basicsForm.errors.name }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Phone</label>
-                                <input v-model="basicsForm.phone" type="tel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="basicsForm.phone" type="tel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="basicsForm.errors.phone" class="mt-1 text-sm text-red-600">{{ basicsForm.errors.phone }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Tax Number</label>
-                                <input v-model="basicsForm.tax_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="basicsForm.tax_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Registration Number</label>
-                                <input v-model="basicsForm.registration_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="basicsForm.registration_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Website</label>
-                                <input v-model="basicsForm.website" type="url" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="basicsForm.website" type="url" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
 
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Country *</label>
-                                <select v-model="basicsForm.country_code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <select v-model="basicsForm.country_code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     <option value="">Select country</option>
                                     <option v-for="c in countries" :key="c.value" :value="c.value">{{ c.label }}</option>
                                 </select>
@@ -325,7 +335,7 @@ function onLogoChange(event: Event): void {
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Currency *</label>
-                                <select v-model="basicsForm.currency" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <select v-model="basicsForm.currency" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     <option value="">Select currency</option>
                                     <option v-for="(label, code) in availableCurrencies" :key="code" :value="code">{{ label }}</option>
                                 </select>
@@ -334,7 +344,7 @@ function onLogoChange(event: Event): void {
 
                             <div v-if="selectedCountry">
                                 <label class="block text-sm font-medium text-gray-700">Financial Year</label>
-                                <select v-model="basicsForm.financial_year_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <select v-model="basicsForm.financial_year_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     <option v-for="(label, value) in selectedCountry.financial_year_options" :key="value" :value="value">{{ label }}</option>
                                 </select>
                             </div>
@@ -342,24 +352,24 @@ function onLogoChange(event: Event): void {
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Email Addresses *</label>
                                 <div v-for="(email, index) in basicsForm.emails" :key="index" class="mt-2 flex items-center gap-2">
-                                    <input v-model="basicsForm.emails[index]" type="email" placeholder="email@example.com" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                    <input v-model="basicsForm.emails[index]" type="email" placeholder="email@example.com" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                     <button v-if="index > 0" type="button" class="text-red-600 hover:text-red-800" @click="removeEmail(index)">
                                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                                     </button>
                                 </div>
-                                <button type="button" class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800" @click="addEmail">+ Add email</button>
+                                <button type="button" class="mt-2 text-sm font-medium text-brand-600 hover:text-brand-800" @click="addEmail">+ Add email</button>
                                 <p v-if="basicsForm.errors['emails.0']" class="mt-1 text-sm text-red-600">{{ basicsForm.errors['emails.0'] }}</p>
                             </div>
 
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Notes</label>
-                                <textarea v-model="basicsForm.notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <textarea v-model="basicsForm.notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                         </div>
 
                         <div class="flex justify-end gap-3 border-t pt-4">
                             <button type="button" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" @click="cancelEdit">Cancel</button>
-                            <button type="submit" :disabled="basicsForm.processing" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50">
+                            <button type="submit" :disabled="basicsForm.processing" class="rounded-md bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50">
                                 {{ basicsForm.processing ? 'Saving...' : 'Save Basics' }}
                             </button>
                         </div>
@@ -370,34 +380,34 @@ function onLogoChange(event: Event): void {
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Location Name</label>
-                                <input v-model="locationForm.location_name" type="text" placeholder="e.g. Main Office, Head Office" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.location_name" type="text" placeholder="e.g. Main Office, Head Office" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">GSTIN / Tax ID</label>
-                                <input v-model="locationForm.gstin" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.gstin" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Address Line 1 *</label>
-                                <input v-model="locationForm.address_line_1" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.address_line_1" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="locationForm.errors.address_line_1" class="mt-1 text-sm text-red-600">{{ locationForm.errors.address_line_1 }}</p>
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Address Line 2</label>
-                                <input v-model="locationForm.address_line_2" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.address_line_2" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">City *</label>
-                                <input v-model="locationForm.city" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.city" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="locationForm.errors.city" class="mt-1 text-sm text-red-600">{{ locationForm.errors.city }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">State / Province *</label>
-                                <input v-model="locationForm.state" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.state" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="locationForm.errors.state" class="mt-1 text-sm text-red-600">{{ locationForm.errors.state }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Country *</label>
-                                <select v-model="locationForm.country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <select v-model="locationForm.country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     <option value="">Select country</option>
                                     <option v-for="c in countries" :key="c.value" :value="c.value">{{ c.label }}</option>
                                 </select>
@@ -405,13 +415,13 @@ function onLogoChange(event: Event): void {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Postal Code *</label>
-                                <input v-model="locationForm.postal_code" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="locationForm.postal_code" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                                 <p v-if="locationForm.errors.postal_code" class="mt-1 text-sm text-red-600">{{ locationForm.errors.postal_code }}</p>
                             </div>
                         </div>
                         <div class="flex justify-end gap-3 border-t pt-4">
                             <button type="button" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" @click="cancelEdit">Cancel</button>
-                            <button type="submit" :disabled="locationForm.processing" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50">
+                            <button type="submit" :disabled="locationForm.processing" class="rounded-md bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50">
                                 {{ locationForm.processing ? 'Saving...' : 'Save Location' }}
                             </button>
                         </div>
@@ -422,36 +432,36 @@ function onLogoChange(event: Event): void {
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Account Name</label>
-                                <input v-model="bankForm.bank_account_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_account_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Account Number</label>
-                                <input v-model="bankForm.bank_account_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_account_number" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Bank Name</label>
-                                <input v-model="bankForm.bank_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">IFSC Code</label>
-                                <input v-model="bankForm.bank_ifsc" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_ifsc" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Branch</label>
-                                <input v-model="bankForm.bank_branch" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_branch" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">SWIFT Code</label>
-                                <input v-model="bankForm.bank_swift" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_swift" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">PAN</label>
-                                <input v-model="bankForm.bank_pan" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <input v-model="bankForm.bank_pan" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
                             </div>
                         </div>
                         <div class="flex justify-end gap-3 border-t pt-4">
                             <button type="button" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" @click="cancelEdit">Cancel</button>
-                            <button type="submit" :disabled="bankForm.processing" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50">
+                            <button type="submit" :disabled="bankForm.processing" class="rounded-md bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50">
                                 {{ bankForm.processing ? 'Saving...' : 'Save Bank Details' }}
                             </button>
                         </div>
@@ -467,12 +477,12 @@ function onLogoChange(event: Event): void {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Upload Logo</label>
-                            <input type="file" accept="image/jpeg,image/png,image/jpg,image/gif,image/svg+xml" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100" @change="onLogoChange" />
+                            <input type="file" accept="image/jpeg,image/png,image/jpg,image/gif,image/svg+xml" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100" @change="onLogoChange" />
                             <p v-if="logoForm.errors.logo" class="mt-1 text-sm text-red-600">{{ logoForm.errors.logo }}</p>
                         </div>
                         <div class="flex justify-end gap-3 border-t pt-4">
                             <button type="button" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" @click="cancelEdit">Cancel</button>
-                            <button type="button" :disabled="!logoForm.logo || logoForm.processing" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50" @click="uploadLogo">
+                            <button type="button" :disabled="!logoForm.logo || logoForm.processing" class="rounded-md bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50" @click="uploadLogo">
                                 {{ logoForm.processing ? 'Uploading...' : 'Upload Logo' }}
                             </button>
                         </div>
@@ -505,12 +515,18 @@ function onLogoChange(event: Event): void {
                                 <span v-else class="text-gray-400">No location</span>
                             </td>
                             <td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                <button type="button" class="text-blue-600 hover:text-blue-900" @click="startEdit(org)">Edit</button>
-                                <button v-if="!org.personal_team" type="button" class="ml-4 text-red-600 hover:text-red-900" @click="deleteOrg(org)">Delete</button>
+                                <button type="button" class="text-brand-600 hover:text-brand-900" @click="startEdit(org)">Edit</button>
+                                <button v-if="!org.personal_team" type="button" class="ml-4 text-red-600 hover:text-red-900" @click="confirmDeleteOrg(org)">Delete</button>
                             </td>
                         </tr>
                         <tr v-if="organizations.data.length === 0">
-                            <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No organizations found.</td>
+                            <td colspan="4" class="px-6 py-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-semibold text-gray-900">No organizations found</h3>
+                                <p class="mt-1 text-sm text-gray-500">Your organization will appear here once set up.</p>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -524,7 +540,7 @@ function onLogoChange(event: Event): void {
                                     v-if="link.url"
                                     type="button"
                                     class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                    :class="{ 'bg-blue-50 text-blue-600': link.active }"
+                                    :class="{ 'bg-brand-50 text-brand-600': link.active }"
                                     @click="router.get(link.url)"
                                     v-html="link.label"
                                 />
@@ -534,5 +550,14 @@ function onLogoChange(event: Event): void {
                 </div>
             </div>
         </div>
+        <ConfirmationModal
+            :show="confirmingOrgDelete"
+            title="Delete Organization"
+            message="Are you sure you want to delete this organization? All associated data will be permanently removed."
+            confirm-label="Delete"
+            :destructive="true"
+            @confirm="deleteOrg"
+            @cancel="confirmingOrgDelete = false"
+        />
     </AppLayout>
 </template>

@@ -23,6 +23,18 @@ const props = defineProps<{
 }>();
 
 // Customer form state
+const searchQuery = ref('');
+
+const filteredCustomers = computed(() => {
+    if (!searchQuery.value.trim()) return props.customers.data;
+    const q = searchQuery.value.toLowerCase();
+    return props.customers.data.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (primaryEmail(c) && primaryEmail(c).toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+    );
+});
+
 const showForm = ref(false);
 const editingCustomer = ref<Customer | null>(null);
 
@@ -78,11 +90,15 @@ function confirmDelete(customer: Customer) {
     confirmingDelete.value = true;
 }
 
+const deleting = ref(false);
+
 function deleteCustomer() {
     if (!customerToDelete.value) return;
+    deleting.value = true;
     router.delete(`/customers/${customerToDelete.value.id}`, {
         preserveScroll: true,
         onSuccess: () => { confirmingDelete.value = false; customerToDelete.value = null; },
+        onFinish: () => { deleting.value = false; },
     });
 }
 
@@ -121,12 +137,20 @@ function closeLocationModal() {
     editingLocation.value = null;
 }
 
-function deleteLocation(customerId: number, locationId: number) {
-    if (confirm('Are you sure you want to delete this location?')) {
-        router.delete(`/customers/${customerId}/locations/${locationId}`, {
-            preserveScroll: true,
-        });
-    }
+const confirmingLocationDelete = ref(false);
+const locationToDelete = ref<{ customerId: number; locationId: number } | null>(null);
+
+function confirmDeleteLocation(customerId: number, locationId: number) {
+    locationToDelete.value = { customerId, locationId };
+    confirmingLocationDelete.value = true;
+}
+
+function deleteLocation() {
+    if (!locationToDelete.value) return;
+    router.delete(`/customers/${locationToDelete.value.customerId}/locations/${locationToDelete.value.locationId}`, {
+        preserveScroll: true,
+        onSuccess: () => { confirmingLocationDelete.value = false; locationToDelete.value = null; },
+    });
 }
 
 function setPrimary(customerId: number, locationId: number) {
@@ -162,13 +186,28 @@ function locationSummary(customer: Customer): string {
         </template>
 
         <div class="py-4">
+            <!-- Search -->
+            <div class="mb-4">
+                <div class="relative max-w-sm">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    <input
+                        v-model="searchQuery"
+                        type="text"
+                        placeholder="Search customers by name, email, or phone..."
+                        class="block w-full rounded-md border-gray-300 pl-10 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    />
+                </div>
+            </div>
+
             <!-- Customer Form Modal -->
             <Teleport to="body">
                 <div v-if="showForm" class="fixed inset-0 z-50 overflow-y-auto">
                     <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
                         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="cancelForm" />
                         <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-                        <div class="relative inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl sm:align-middle">
+                        <div class="relative inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl sm:align-middle" role="dialog" aria-modal="true" :aria-label="editingCustomer ? 'Edit Customer' : 'Add Customer'">
                             <div class="bg-white px-4 pb-4 pt-5 sm:p-6">
                                 <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
                                     {{ editingCustomer ? 'Edit Customer' : 'Add Customer' }}
@@ -188,7 +227,7 @@ function locationSummary(customer: Customer): string {
             </Teleport>
 
             <!-- Customer Table -->
-            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+            <div class="overflow-x-auto bg-white shadow-sm sm:rounded-lg">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -202,7 +241,7 @@ function locationSummary(customer: Customer): string {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        <template v-for="customer in customers.data" :key="customer.id">
+                        <template v-for="customer in filteredCustomers" :key="customer.id">
                             <tr class="hover:bg-gray-50">
                                 <td class="px-3 py-4">
                                     <button
@@ -241,15 +280,31 @@ function locationSummary(customer: Customer): string {
                                         <div class="flex gap-2">
                                             <button v-if="customer.primary_location_id !== loc.id" type="button" class="text-xs text-brand-600 hover:text-brand-900" @click="setPrimary(customer.id, loc.id)">Set Primary</button>
                                             <button type="button" class="text-xs text-brand-600 hover:text-brand-900" @click="openEditLocation(customer.id, loc)">Edit</button>
-                                            <button type="button" class="text-xs text-red-600 hover:text-red-900" @click="deleteLocation(customer.id, loc.id)">Delete</button>
+                                            <button type="button" class="text-xs text-red-600 hover:text-red-900" @click="confirmDeleteLocation(customer.id, loc.id)">Delete</button>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                         </template>
-                        <tr v-if="customers.data.length === 0">
-                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
-                                No customers yet. Click "Add Customer" to create one.
+                        <tr v-if="filteredCustomers.length === 0">
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <template v-if="searchQuery">
+                                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No results found</h3>
+                                    <p class="mt-1 text-sm text-gray-500">No customers match "{{ searchQuery }}". Try a different search term.</p>
+                                </template>
+                                <template v-else>
+                                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-4.5 0 2.625 2.625 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No customers yet</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Add your first customer to start creating invoices.</p>
+                                    <div class="mt-4">
+                                        <button type="button" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700" @click="openCreate">Add Customer</button>
+                                    </div>
+                                </template>
                             </td>
                         </tr>
                     </tbody>
@@ -302,6 +357,17 @@ function locationSummary(customer: Customer): string {
             :destructive="true"
             @confirm="deleteCustomer"
             @cancel="confirmingDelete = false"
+        />
+
+        <!-- Location Delete Confirmation -->
+        <ConfirmationModal
+            :show="confirmingLocationDelete"
+            title="Delete Location"
+            message="Are you sure you want to delete this location? This action cannot be undone."
+            confirm-label="Delete"
+            :destructive="true"
+            @confirm="deleteLocation"
+            @cancel="confirmingLocationDelete = false"
         />
     </AppLayout>
 </template>
