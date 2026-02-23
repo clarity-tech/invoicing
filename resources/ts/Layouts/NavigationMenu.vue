@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { dashboard, logout } from '@/routes';
 import { index as customersIndex } from '@/routes/customers';
 import { index as invoicesIndex } from '@/routes/invoices';
 import { index as organizationsIndex } from '@/routes/organizations';
+import { index as numberingSeriesIndex } from '@/routes/numbering-series';
 import { show as profileShow } from '@/routes/profile';
 
 const page = usePage();
 const showMobileMenu = ref(false);
 const showUserDropdown = ref(false);
 
-const auth = page.props.auth as {
+const auth = (page.props.auth ?? {}) as {
     user: { id: number; name: string; email: string; profile_photo_url: string } | null;
     currentTeam: { id: number; name: string; company_name: string | null } | null;
 };
@@ -23,6 +24,23 @@ function handleLogout() {
 function isCurrentPath(path: string): boolean {
     return page.url.startsWith(path);
 }
+
+// Close mobile menu and dropdown on Inertia navigation
+router.on('navigate', () => {
+    showMobileMenu.value = false;
+    showUserDropdown.value = false;
+});
+
+// Close dropdown when clicking outside
+function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (showUserDropdown.value && !target.closest('[data-user-dropdown]')) {
+        showUserDropdown.value = false;
+    }
+}
+
+onMounted(() => document.addEventListener('click', handleClickOutside));
+onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 </script>
 
 <template>
@@ -48,6 +66,15 @@ function isCurrentPath(path: string): boolean {
                             Dashboard
                         </Link>
                         <Link
+                            :href="invoicesIndex.url()"
+                            class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition"
+                            :class="isCurrentPath('/invoices') || isCurrentPath('/estimates')
+                                ? 'border-brand-400 text-gray-900'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                        >
+                            Invoices
+                        </Link>
+                        <Link
                             :href="customersIndex.url()"
                             class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition"
                             :class="isCurrentPath('/customers')
@@ -55,15 +82,6 @@ function isCurrentPath(path: string): boolean {
                                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
                         >
                             Customers
-                        </Link>
-                        <Link
-                            :href="invoicesIndex.url()"
-                            class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition"
-                            :class="isCurrentPath('/invoices')
-                                ? 'border-brand-400 text-gray-900'
-                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
-                        >
-                            Invoices
                         </Link>
                         <Link
                             :href="organizationsIndex.url()"
@@ -74,6 +92,15 @@ function isCurrentPath(path: string): boolean {
                         >
                             Organizations
                         </Link>
+                        <Link
+                            :href="numberingSeriesIndex.url()"
+                            class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition"
+                            :class="isCurrentPath('/numbering-series')
+                                ? 'border-brand-400 text-gray-900'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                        >
+                            Settings
+                        </Link>
                     </div>
                 </div>
 
@@ -83,10 +110,10 @@ function isCurrentPath(path: string): boolean {
                         {{ auth.currentTeam.company_name || auth.currentTeam.name }}
                     </span>
 
-                    <div class="relative ml-3">
+                    <div class="relative ml-3" data-user-dropdown>
                         <button
                             class="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                            @click="showUserDropdown = !showUserDropdown"
+                            @click.stop="showUserDropdown = !showUserDropdown"
                         >
                             <img
                                 v-if="auth.user?.profile_photo_url"
@@ -104,7 +131,6 @@ function isCurrentPath(path: string): boolean {
                         <div
                             v-show="showUserDropdown"
                             class="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5"
-                            @click="showUserDropdown = false"
                         >
                             <div class="block px-4 py-2 text-xs text-gray-400">
                                 {{ auth.user?.email }}
@@ -152,9 +178,10 @@ function isCurrentPath(path: string): boolean {
         <div v-show="showMobileMenu" class="sm:hidden">
             <div class="space-y-1 pb-3 pt-2">
                 <Link :href="dashboard.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/dashboard') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Dashboard</Link>
+                <Link :href="invoicesIndex.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/invoices') || isCurrentPath('/estimates') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Invoices</Link>
                 <Link :href="customersIndex.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/customers') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Customers</Link>
-                <Link :href="invoicesIndex.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/invoices') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Invoices</Link>
                 <Link :href="organizationsIndex.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/organizations') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Organizations</Link>
+                <Link :href="numberingSeriesIndex.url()" class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium" :class="isCurrentPath('/numbering-series') ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800'">Settings</Link>
             </div>
             <div class="border-t border-gray-200 pb-1 pt-4">
                 <div class="px-4">
