@@ -94,7 +94,7 @@ function send() {
         class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
         @keydown.escape="emit('close')"
     >
-        <div class="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[95vh] overflow-hidden flex flex-col mx-4" role="dialog" aria-modal="true">
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
                 <h2 class="text-xl font-semibold text-gray-900">
