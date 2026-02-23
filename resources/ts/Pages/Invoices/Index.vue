@@ -5,6 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import MoneyDisplay from '@/Components/MoneyDisplay.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import { formatDate } from '@/composables/useFormatDate';
 import type { Invoice, InvoiceStatus } from '@/types';
 
 interface PaginatedInvoices {
@@ -54,6 +55,9 @@ function confirmDelete(invoice: Invoice) {
     confirmingDelete.value = true;
 }
 
+const duplicating = ref<number | null>(null);
+const converting = ref<number | null>(null);
+
 function deleteInvoice() {
     if (!invoiceToDelete.value) return;
     router.delete(`/invoices/${invoiceToDelete.value.id}`, {
@@ -63,11 +67,19 @@ function deleteInvoice() {
 }
 
 function duplicateInvoice(invoice: Invoice) {
-    router.post(`/invoices/${invoice.id}/duplicate`, {}, { preserveScroll: true });
+    duplicating.value = invoice.id;
+    router.post(`/invoices/${invoice.id}/duplicate`, {}, {
+        preserveScroll: true,
+        onFinish: () => { duplicating.value = null; },
+    });
 }
 
 function convertEstimate(invoice: Invoice) {
-    router.post(`/invoices/${invoice.id}/convert`, {}, { preserveScroll: true });
+    converting.value = invoice.id;
+    router.post(`/invoices/${invoice.id}/convert`, {}, {
+        preserveScroll: true,
+        onFinish: () => { converting.value = null; },
+    });
 }
 
 function publicUrl(invoice: Invoice): string {
@@ -80,11 +92,6 @@ function pdfUrl(invoice: Invoice): string {
     return invoice.type === 'invoice'
         ? `/invoices/${invoice.ulid}/pdf`
         : `/estimates/${invoice.ulid}/pdf`;
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 const tabs = [
@@ -143,7 +150,7 @@ const tabs = [
             </div>
 
             <!-- Table -->
-            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+            <div class="overflow-x-auto bg-white shadow-sm sm:rounded-lg">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -191,22 +198,31 @@ const tabs = [
                                     <a :href="publicUrl(invoice)" target="_blank" class="text-green-600 hover:text-green-900">View</a>
                                     <a :href="`/invoices/${invoice.id}/edit`" class="text-brand-600 hover:text-brand-900">Edit</a>
                                     <a :href="pdfUrl(invoice)" class="text-red-600 hover:text-red-900">PDF</a>
-                                    <button type="button" class="text-gray-600 hover:text-gray-900" @click="duplicateInvoice(invoice)">Duplicate</button>
+                                    <button type="button" class="text-gray-600 hover:text-gray-900 disabled:opacity-50" :disabled="duplicating === invoice.id" @click="duplicateInvoice(invoice)">{{ duplicating === invoice.id ? 'Duplicating...' : 'Duplicate' }}</button>
                                     <button
                                         v-if="invoice.type === 'estimate'"
                                         type="button"
-                                        class="text-purple-600 hover:text-purple-900"
+                                        class="text-purple-600 hover:text-purple-900 disabled:opacity-50"
+                                        :disabled="converting === invoice.id"
                                         @click="convertEstimate(invoice)"
                                     >
-                                        Convert
+                                        {{ converting === invoice.id ? 'Converting...' : 'Convert' }}
                                     </button>
                                     <button type="button" class="text-red-600 hover:text-red-900" @click="confirmDelete(invoice)">Delete</button>
                                 </div>
                             </td>
                         </tr>
                         <tr v-if="invoices.data.length === 0">
-                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
-                                No documents found.
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-semibold text-gray-900">No documents yet</h3>
+                                <p class="mt-1 text-sm text-gray-500">Get started by creating your first invoice or estimate.</p>
+                                <div class="mt-4 flex justify-center gap-3">
+                                    <a href="/invoices/create" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700">Create Invoice</a>
+                                    <a href="/estimates/create" class="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">Create Estimate</a>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
