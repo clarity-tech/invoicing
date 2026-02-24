@@ -1,702 +1,798 @@
 # Product Requirements Document (PRD)
 ## Multitenant SaaS Invoicing Platform
 
-### Document Version: 1.1
-### Last Updated: 2025-07-10
-### Status: ✅ Refactored to Organization-Centric Architecture
+### Document Version: 2.0
+### Last Updated: 2026-02-23
+### Status: Post-Jetstream Migration | Livewire v4
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [Current State Analysis](#current-state-analysis)
+2. [Technology Stack](#technology-stack)
 3. [Architecture Overview](#architecture-overview)
 4. [Database Schema](#database-schema)
-5. [Multi-Currency System](#multi-currency-system)
-6. [Custom URL Handle System](#custom-url-handle-system)
-7. [Tenant Isolation System](#tenant-isolation-system)
-8. [Public Routes Enhancement](#public-routes-enhancement)
-9. [Implementation Phases](#implementation-phases)
-10. [Technical Specifications](#technical-specifications)
-11. [Git Workflow & Quality Assurance](#git-workflow--quality-assurance)
-12. [Progress Tracking](#progress-tracking)
+5. [Feature Inventory](#feature-inventory)
+6. [Route Map](#route-map)
+7. [Livewire Components](#livewire-components)
+8. [Services Layer](#services-layer)
+9. [Security & Authorization](#security--authorization)
+10. [Multi-Currency System](#multi-currency-system)
+11. [Invoice Numbering System](#invoice-numbering-system)
+12. [Email System](#email-system)
+13. [PDF Generation](#pdf-generation)
+14. [Testing Infrastructure](#testing-infrastructure)
+15. [Docker & Infrastructure](#docker--infrastructure)
+16. [Bugs & Issues](#bugs--issues)
+17. [Improvements Needed](#improvements-needed)
+18. [Future Roadmap](#future-roadmap)
 
 ---
 
-## 🎯 Executive Summary
+## 1. Executive Summary
 
 ### Project Vision
-Transform the existing single-tenant Laravel invoicing application into a comprehensive multitenant SaaS platform where users can:
-- Register and create organizations for collaboration
-- Manage business entities with multi-currency support
-- Create and manage customers with currency preferences
-- Generate invoices and estimates with custom branding
-- Share public invoices with SEO-friendly URLs
+A multitenant SaaS invoicing platform where businesses can register, create organizations, manage customers, generate invoices/estimates with multi-currency support, and share professional public documents.
 
-### Business Objectives
-- **Market Expansion**: Enable multiple businesses to use the platform
-- **Revenue Growth**: SaaS subscription model with per-organization pricing
-- **User Experience**: Seamless onboarding and multi-organization management
-- **Brand Flexibility**: Custom URL handles and branding per organization
-- **Global Reach**: Multi-currency support for international businesses
+### Current State (February 2026)
+- **Jetstream removed**: All Jetstream code inlined into `app/` (traits, events, actions, policies)
+- **Livewire v4**: Upgraded from v3, using new config structure and `$wire` syntax
+- **Fortify standalone**: Authentication backend via Laravel Fortify (headless)
+- **737 tests passing**, 4 skipped, 94.7% coverage
+- **9 currencies** supported with India GST compliance
+- **Production Docker**: Multi-stage Dockerfile with Nginx-FPM and Chrome PDF service
 
-### Success Metrics
-- [x] User registration and organization creation flow (< 2 minutes)
-- [x] Organization onboarding completion rate (> 90%)
-- [x] Multi-currency invoice generation accuracy (100%)
-- [x] Public URL accessibility and SEO performance
-- [x] Test coverage maintenance (94.7% achieved)
+### Key Achievements
+- Organization-centric architecture (teams table reused as organizations)
+- 4-step onboarding wizard for new organizations
+- Multi-tenant data isolation via OrganizationScope + component-level authorization
+- Flexible invoice numbering with financial year support
+- Public document sharing via ULID-based URLs
+- Comprehensive factory system with 60+ composable states
 
 ---
 
-## 🔍 Current State Analysis
+## 2. Technology Stack
 
-### ✅ Implemented Architecture (Organization-Centric)
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    User     │───▶│Organization │───▶│  Customer   │───▶│   Invoice   │
-│             │    │ (Jetstream) │    │ (Scoped)    │    │ (Scoped)    │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                         │
-                         ▼
-                   ┌─────────────┐
-                   │  Location   │
-                   │(Polymorphic)│
-                   └─────────────┘
-```
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Framework | Laravel | 12.19.3 |
+| PHP | PHP | 8.5.2 |
+| Database | PostgreSQL | 18 |
+| UI Framework | Livewire | 4.1.4 |
+| UI Components | luvi-ui/laravel-luvi (shadcn for Livewire) | 0.6.0 |
+| JS Framework | Alpine.js | 3.14.9 |
+| CSS | Tailwind CSS | 4.1.11 |
+| Auth Backend | Laravel Fortify | 1.x |
+| API Tokens | Laravel Sanctum | 4.x |
+| Money | akaunting/laravel-money | 6.x |
+| Media | spatie/laravel-medialibrary | 11.x |
+| Icons | mallardduck/blade-lucide-icons | 1.x |
+| Testing | Pest | 4.x |
+| Browser Testing | Pest Browser + Playwright | 4.x / 1.54 |
+| Bundler | Vite | 7.0.5 |
+| Package Manager | Bun | 1.2 |
+| Container | Laravel Sail | 1.x |
+| Server | Laravel Octane (available) | 2.x |
+| PDF | Puppeteer via Chrome HTTP service | - |
 
-### Architecture Transformation Complete
-- **Team/Company Consolidation**: Merged dual Team/Company structure into single Organization model
-- **Simplified Relationships**: Direct User → Organization → Customer → Invoice flow
-- **Polymorphic Locations**: Unified location management for organizations and customers
-- **Multi-Currency Support**: AED, USD, EUR, GBP, INR with proper tax templates
-
-### Migration Strategy
-- **Zero Downtime**: Gradual migration with feature flags
-- **Data Preservation**: Existing data becomes first organization of first team
-- **Backward Compatibility**: Maintain existing API endpoints during transition
-
----
-
-## 🏗️ Architecture Overview
-
-### Organization-Centric Architecture
-
-#### Single-Layer Architecture
-- **Purpose**: Business entity management with user collaboration
-- **Components**: Users, Organizations (Teams), Customers, Invoices, Locations
-- **Features**: Multi-currency support, tax template management, polymorphic locations
-- **Example**: "Dubai Trading LLC" with AED currency and UAE tax templates
-
-### Relationship Flow
-```
-User → signs up → creates Organization → manages Customers → issues Invoices
-```
-
-### Key Architectural Decisions
-- **Organization = Business Entity**: Simplified from dual Team/Company structure
-- **Tenant Isolation**: Organization-scoped data access patterns
-- **Multi-Currency**: Currency enum with comprehensive tax template system
-- **Public Access**: ULID-based public URLs with professional styling
+### Removed Packages
+- `laravel/jetstream` - EOL, code inlined into app (traits, events, actions, policies)
 
 ---
 
-## 🗄️ Database Schema
+## 3. Architecture Overview
 
-### Current Database Schema
+### Data Flow
+```
+User --> registers --> Personal Organization created (setup_completed_at = null)
+                            |
+                            v
+                   Organization Setup Wizard (4 steps)
+                            |
+                            v
+                   Organization (teams table)
+                      /        |        \
+                     v         v         v
+                Customers  Invoices   Tax Templates
+                    |          |
+                    v          v
+                Locations  InvoiceItems
+               (polymorphic)
+```
 
-```sql
--- ========================================
--- JETSTREAM TABLES (User Management)
--- ========================================
+### Key Architectural Patterns
 
-users (
-    id BIGINT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    email_verified_at TIMESTAMP,
-    password VARCHAR(255) NOT NULL,
-    two_factor_secret TEXT,
-    two_factor_recovery_codes TEXT,
-    remember_token VARCHAR(100),
-    current_team_id BIGINT,
-    profile_photo_path VARCHAR(2048),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (current_team_id) REFERENCES teams(id)
-)
+1. **Organization-Centric Multi-tenancy**: `Organization` model maps to `teams` table. Global `OrganizationScope` filters Customer, Invoice, TaxTemplate by current user's team.
 
-teams (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    personal_team BOOLEAN DEFAULT FALSE,
-    -- Organization-specific fields
-    company_name VARCHAR(255),
-    tax_number VARCHAR(255),
-    registration_number VARCHAR(255),
-    emails JSON,
-    phone VARCHAR(255),
-    website VARCHAR(255),
-    currency ENUM('INR','USD','EUR','GBP','AUD','CAD','SGD','JPY','AED'),
-    custom_domain VARCHAR(255),
-    primary_location_id BIGINT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (primary_location_id) REFERENCES locations(id)
-)
+2. **Value Objects**: `ContactCollection`, `BankDetails`, `InvoiceTotals` encapsulate business logic with immutability.
 
--- ========================================
--- BUSINESS TABLES
--- ========================================
+3. **Custom Casts**: `ContactCollectionCast`, `BankDetailsCast`, `ExchangeRateCast` handle JSON-to-object conversion.
 
-locations (
-    id BIGINT PRIMARY KEY,
-    locatable_type VARCHAR(255) NOT NULL,
-    locatable_id BIGINT NOT NULL,
-    name VARCHAR(255),
-    gstin VARCHAR(255),
-    address_line_1 VARCHAR(255),
-    address_line_2 VARCHAR(255),
-    city VARCHAR(255),
-    state VARCHAR(255),
-    country VARCHAR(255),
-    postal_code VARCHAR(255),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    INDEX idx_locatable (locatable_type, locatable_id)
-)
+4. **Integer Money Storage**: All monetary values stored as cents (bigint). Tax rates stored as basis points (1800 = 18%).
 
-customers (
-    id BIGINT PRIMARY KEY,
-    organization_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    phone VARCHAR(255),
-    emails JSON,
-    primary_location_id BIGINT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES teams(id) ON DELETE CASCADE,
-    FOREIGN KEY (primary_location_id) REFERENCES locations(id),
-    INDEX idx_organization_customers (organization_id)
-)
+5. **Polymorphic Locations**: Single `locations` table serves both organizations and customers via `locatable_type`/`locatable_id`.
 
-invoices (
-    id BIGINT PRIMARY KEY,
-    organization_id BIGINT NOT NULL,
-    customer_id BIGINT NOT NULL,
-    ulid VARCHAR(26) UNIQUE NOT NULL,
-    type ENUM('invoice', 'estimate') NOT NULL,
-    status ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
-    invoice_number VARCHAR(255),
-    currency ENUM('INR','USD','EUR','GBP','AUD','CAD','SGD','JPY','AED') NOT NULL,
-    organization_location_id BIGINT,
-    customer_location_id BIGINT,
-    issued_at TIMESTAMP,
-    due_at TIMESTAMP,
-    subtotal BIGINT NOT NULL DEFAULT 0,
-    tax BIGINT NOT NULL DEFAULT 0,
-    total BIGINT NOT NULL DEFAULT 0,
-    email_recipients JSON,
-    notes TEXT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES teams(id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
-    FOREIGN KEY (organization_location_id) REFERENCES locations(id),
-    FOREIGN KEY (customer_location_id) REFERENCES locations(id),
-    INDEX idx_organization_invoices (organization_id),
-    INDEX idx_public_ulid (ulid)
-)
+6. **ULID Public Identifiers**: Invoices use ULID for public sharing URLs (better performance than UUID, no sequential exposure).
 
-invoice_items (
-    id BIGINT PRIMARY KEY,
-    invoice_id BIGINT NOT NULL,
-    description TEXT NOT NULL,
-    quantity DECIMAL(10,2) NOT NULL,
-    unit_price BIGINT NOT NULL,
-    tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
-)
+7. **Inlined Jetstream**: Team management (HasTeams, HasProfilePhoto, events, actions, policies) lives in `app/Traits/`, `app/Events/`, `app/Actions/Jetstream/`, `app/Policies/`.
 
-tax_templates (
-    id BIGINT PRIMARY KEY,
-    organization_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
-    rate DECIMAL(5,3) NOT NULL,
-    category VARCHAR(255),
-    country_code VARCHAR(2) NOT NULL,
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    metadata JSON,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES teams(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_org_template (organization_id, name)
-)
+### Directory Structure
+```
+app/
+  Actions/
+    Fortify/          # Auth actions (CreateNewUser, UpdatePassword, etc.)
+    Jetstream/        # Team actions (CreateTeam, AddTeamMember, etc.)
+  Contracts/          # (empty - uses concrete classes)
+  Currency.php        # Enum with 9 currencies
+  Events/             # 10 team lifecycle events
+  Http/
+    Controllers/      # 7 controllers (mostly thin)
+    Middleware/        # EnsureOrganizationSetup, AuthenticateSession, TrustProxies
+  Livewire/           # 17 components (6 domain, 11 auth/team)
+    Profile/          # 5 profile components
+    Teams/            # 5 team components
+  Mail/               # DocumentMailer, TeamInvitation
+  Models/             # 11 models
+    Scopes/           # OrganizationScope
+  Policies/           # TeamPolicy, InvoicePolicy, CustomerPolicy
+  Providers/          # AppServiceProvider, FortifyServiceProvider, TeamServiceProvider, PolicyServiceProvider
+  Services/           # InvoiceCalculator, PdfService, InvoiceNumberingService, EstimateToInvoiceConverter
+  Support/            # Jetstream helpers, Role, OwnerRole
+  Traits/             # HasTeams, HasProfilePhoto, ConfirmsPasswords, etc.
 ```
 
 ---
 
-## 💱 Multi-Currency System
+## 4. Database Schema
 
-### Currency Architecture
+### Tables (20 total)
 
-#### Organization Currency Settings
-- **Default Currency**: Set during organization onboarding (mandatory)
-- **Supported Currencies**: USD, EUR, GBP, INR, CAD, AUD, JPY, AED, SGD
-- **Storage**: ISO 4217 3-character currency codes via PHP enum
-- **Validation**: Against predefined currency list with symbols and names
-- **Tax Templates**: Currency-specific tax templates (GST for INR, VAT for AED/EUR/GBP, Sales Tax for USD)
+#### Core Business Tables
 
-#### Customer Currency Preferences
-- **Optional Setting**: Customers can have preferred currencies
-- **Inheritance**: Falls back to organization default if not set
-- **Flexibility**: Can be different from organization currency
-- **Tax Integration**: Automatic tax rate selection based on organization currency
+| Table | Purpose | Key Columns | FK Constraints |
+|-------|---------|-------------|----------------|
+| `teams` | Organizations | user_id, name, personal_team, company_name, tax_number, currency(3), country_code(3), financial_year_type, bank_details(json), emails(json), setup_completed_at | primary_location_id -> locations |
+| `customers` | Customer entities | organization_id, name, phone, emails(json), currency(3) | organization_id -> teams (cascade), primary_location_id -> locations (set null) |
+| `invoices` | Invoices & estimates | organization_id, customer_id, ulid(26), type(check: invoice/estimate), status(check: draft/sent/accepted/paid/void), currency(3), exchange_rate(bigint), subtotal/tax/total(bigint), tax_breakdown(json), email_recipients(json), notes, terms | 6 FKs to teams, customers, locations, numbering_series |
+| `invoice_items` | Line items | invoice_id, description, quantity(int), unit_price(bigint), tax_rate(int basis points), sac_code(20) | invoice_id -> invoices (cascade) |
+| `locations` | Polymorphic addresses | locatable_type, locatable_id, name, gstin, address fields, country(3) | None (polymorphic) |
+| `tax_templates` | Tax rate templates | organization_id, name, type, rate(int basis points), category, country_code(2), is_active, metadata(json) | organization_id -> teams (cascade) |
+| `invoice_numbering_series` | Number sequences | organization_id, location_id, name, prefix, format_pattern, current_number, reset_frequency, is_active, is_default | organization_id -> teams (cascade), location_id -> locations (cascade) |
+| `customer_contacts` | Contact people | customer_id, name, email, phone, designation, department, is_primary | customer_id -> customers (cascade) |
 
-#### Invoice Currency Logic
-```php
-// Currency determination priority:
-1. Customer preferred_currency (if set)
-2. Organization default_currency (fallback)
-3. System default 'INR' (ultimate fallback)
+#### Auth & Team Tables
 
-// Tax rate determination:
-1. Organization currency-specific tax templates
-2. Automatic tax rate selection (5% VAT for AED, 18% GST for INR, etc.)
-```
+| Table | Purpose | Notes |
+|-------|---------|-------|
+| `users` | User accounts | email, password, current_team_id, profile_photo_path, 2FA fields |
+| `team_user` | Team membership pivot | team_id, user_id, role. **BUG: Missing FK constraints** |
+| `team_invitations` | Pending invitations | team_id, email, role. Has FK to teams |
+| `personal_access_tokens` | Sanctum API tokens | Polymorphic tokenable |
+| `sessions` | Database sessions | user_id, ip_address, user_agent |
+| `media` | Spatie media library | Polymorphic model_type/model_id, collections, conversions |
 
-### Implementation Details
+#### Infrastructure Tables
+- `cache`, `cache_locks` - Cache store
+- `jobs`, `job_batches`, `failed_jobs` - Queue system
+- `migrations` - Migration tracking
+- `password_reset_tokens` - Password reset
 
-#### Database Storage
-- **Monetary Values**: Stored as integers in smallest currency unit (cents/paise)
-- **Currency Code**: Stored separately for each invoice
-- **Precision**: Maintains accuracy for financial calculations
+### Key Indexes
+- `invoices`: Composite indexes on (org_id, type, status), (org_id, issued_at), (customer_id, type), unique on ulid, unique on (org_id, invoice_number, type)
+- `tax_templates`: Unique on (organization_id, name)
+- `invoice_numbering_series`: Indexes on (org_id, is_active), (org_id, is_default), (org_id, location_id)
 
-#### Money Formatting
-```php
-// Using akaunting/laravel-money package with dynamic currencies
-money($amount, $currency)->format() // ₹1,000.00 for INR
-money($amount, $currency)->formatWithCode() // INR 1,000.00
-```
-
-#### Currency Enum Configuration
-```php
-// app/Currency.php
-enum Currency: string {
-    case INR = 'INR';
-    case USD = 'USD';
-    case EUR = 'EUR';
-    case GBP = 'GBP';
-    case AUD = 'AUD';
-    case CAD = 'CAD';
-    case SGD = 'SGD';
-    case JPY = 'JPY';
-    case AED = 'AED';
-    
-    public function symbol(): string {
-        return match($this) {
-            self::INR => '₹',
-            self::USD => '$',
-            self::EUR => '€',
-            self::GBP => '£',
-            self::AUD => 'A$',
-            self::CAD => 'C$',
-            self::SGD => 'S$',
-            self::JPY => '¥',
-            self::AED => 'د.إ',
-        };
-    }
-}
-```
-
-### Tax Template System
-
-#### Currency-Specific Templates
-- **INR**: CGST 9%, SGST 9%, IGST 18%, GST 5/12/28%, TDS 10%
-- **AED**: VAT 5%, VAT 0%, VAT Exempt, Excise Tax 50/99%
-- **USD**: Sales Tax 4/6/8.25%, No Tax
-- **EUR**: VAT 7/19%, VAT 0%
-- **GBP**: VAT 5/20%, VAT 0%
+### Check Constraints
+- `invoices.type`: Must be 'invoice' or 'estimate'
+- `invoices.status`: Must be draft, sent, accepted, paid, or void
 
 ---
 
-## 🔗 Custom URL Handle System
+## 5. Feature Inventory
 
-### Public URL Structure
+### Implemented Features
 
-#### ULID-Based Public URLs
-- **Format**: `/invoices/{ulid}` and `/estimates/{ulid}`
-- **Security**: ULIDs provide security through obscurity
-- **SEO**: Cleaner URLs than sequential IDs
-- **Uniqueness**: Globally unique across all documents
+#### Authentication & User Management
+- [x] User registration with personal organization auto-creation
+- [x] Email/password login via Fortify
+- [x] Two-factor authentication (TOTP with QR code + recovery codes)
+- [x] Password reset via email
+- [x] Email verification
+- [x] Password confirmation for sensitive actions
+- [x] Profile photo upload
+- [x] Profile information updates (name, email)
+- [x] Password change with current password verification
+- [x] Logout other browser sessions
+- [x] Account deletion with password confirmation
+- [x] API token management (Sanctum) - feature available but disabled in config
 
-#### URL Examples
-```
-https://yourdomain.com/invoices/01HZ8J9K2N3M4P5Q6R7S8T9V0W
-https://yourdomain.com/estimates/01HZ8J9K2N3M4P5Q6R7S8T9V0W
-https://yourdomain.com/invoices/01HZ8J9K2N3M4P5Q6R7S8T9V0W/pdf
-```
+#### Organization Management
+- [x] 4-step onboarding wizard (Company Info -> Location -> Currency/FY -> Contacts)
+- [x] Organization CRUD with full business details
+- [x] Logo upload via Spatie Media Library
+- [x] Bank details management (account, IFSC, SWIFT, PAN)
+- [x] Country-based smart defaults (currency, financial year type)
+- [x] Multiple email contacts per organization (ContactCollection)
+- [x] Setup completion tracking with middleware enforcement
+- [x] Organization switching (multi-team support)
 
-### Route Implementation
-```php
-// Public routes
-Route::get('/invoices/{invoice:ulid}', [PublicViewController::class, 'showInvoice'])
-    ->name('invoices.public');
-Route::get('/estimates/{estimate:ulid}', [PublicViewController::class, 'showEstimate'])
-    ->name('estimates.public');
-Route::get('/invoices/{invoice:ulid}/pdf', [PublicViewController::class, 'downloadInvoicePdf'])
-    ->name('invoices.pdf');
-```
+#### Team Management
+- [x] Team/organization creation
+- [x] Team member invitations via signed email links
+- [x] Team member addition (existing users)
+- [x] Team member removal
+- [x] Role-based permissions (Owner, Admin, Editor)
+- [x] Team name updates
+- [x] Team deletion (non-personal only)
 
----
+#### Customer Management
+- [x] Customer CRUD with organization scoping
+- [x] Multiple contacts per customer (name + email)
+- [x] Multiple polymorphic locations per customer
+- [x] Primary location designation
+- [x] GSTIN support for Indian customers
+- [x] Customer-specific currency preference
 
-## 🔒 Tenant Isolation System
+#### Invoice & Estimate Management
+- [x] Unified Invoice/Estimate model with type field
+- [x] Multi-step creation form with real-time calculations
+- [x] Line items with description, quantity, unit price, tax rate, SAC code
+- [x] Automatic subtotal, tax, and total calculation (InvoiceCalculator)
+- [x] Organization and customer location selection
+- [x] Customer shipping location support
+- [x] Status workflow: draft -> sent -> accepted -> paid / void
+- [x] Estimate-to-invoice conversion (preserves data, new number)
+- [x] Invoice duplication
+- [x] Invoice deletion
+- [x] Tax breakdown (JSON) for multi-tax support
+- [x] Email recipients management
+- [x] Notes and terms fields
+- [x] Exchange rate support for multi-currency
+- [x] File attachments via Media Library
 
-### Organization-Scoped Access
+#### Invoice Numbering
+- [x] Configurable format patterns with tokens ({PREFIX}, {YEAR}, {SEQUENCE:4}, {FY}, etc.)
+- [x] Reset frequencies: Never, Yearly, Monthly, Financial Year
+- [x] Location-specific numbering series
+- [x] Default series auto-creation
+- [x] Organization-wide and location-scoped series
+- [x] Real-time preview of next number
+- [x] Financial year integration (India, US, UK, etc.)
+- [x] Unique number enforcement per organization
 
-#### Model Relationships
-```php
-// Organization-scoped models
-class Customer extends Model {
-    public function organization() {
-        return $this->belongsTo(Organization::class);
-    }
-}
+#### Public Document Sharing
+- [x] Public invoice view via ULID URL (no auth required)
+- [x] Public estimate view via ULID URL
+- [x] Professional responsive design (Zoho Books style)
+- [x] Print-optimized CSS
+- [x] PDF download (invoice and estimate)
+- [x] Rate limiting on public views (60/min) and PDF downloads (10/min)
+- [x] GST-aware headers ("TAX INVOICE" for India, "INVOICE" otherwise)
+- [x] Bank details display on public documents
 
-class Invoice extends Model {
-    public function organization() {
-        return $this->belongsTo(Organization::class);
-    }
-}
-```
+#### Email System
+- [x] Send invoices/estimates via email (queued)
+- [x] Custom email subject and body
+- [x] CC recipients support
+- [x] PDF attachment option
+- [x] Multiple email recipients selection
+- [x] Team member invitation emails with signed URLs
 
-#### Access Control
-- **Query Scoping**: Automatic organization_id filtering in queries
-- **Route Protection**: Middleware ensures valid organization context
-- **Policy Enforcement**: Laravel policies for fine-grained control
-- **Session Security**: Organization context stored securely
+#### Multi-Currency
+- [x] 9 supported currencies: INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED
+- [x] Currency symbols and full names
+- [x] Indian number grouping (lakh/crore) for INR
+- [x] Amount-to-words conversion (NumberFormatter)
+- [x] Subunit names (Paise, Cents, Fils, etc.)
+- [x] Currency-specific tax templates
 
-### Security Implementation
-```php
-// Organization policy
-class OrganizationPolicy {
-    public function view(User $user, Organization $organization) {
-        return $user->belongsToTeam($organization);
-    }
-    
-    public function manage(User $user, Organization $organization) {
-        return $user->hasTeamRole($organization, 'admin');
-    }
-}
-```
-
----
-
-## 🌐 Public Routes Enhancement
-
-### Public Document System
-
-#### Document Access
-- **Public URLs**: Accessible without authentication
-- **Professional Styling**: Responsive, print-ready design
-- **PDF Generation**: High-quality PDF downloads
-- **Email Sharing**: Direct email document sharing
-
-#### Public Templates
-- **Responsive Design**: Mobile-first approach
-- **Print Optimization**: Print-ready styling
-- **SEO Optimization**: Meta tags and structured data
-- **Performance**: Optimized loading and caching
-
-### Email Integration
-```php
-// Document sharing
-class DocumentMailer {
-    public function sendInvoice(Invoice $invoice, array $recipients) {
-        $publicUrl = route('invoices.public', $invoice->ulid);
-        $pdfUrl = route('invoices.pdf', $invoice->ulid);
-        
-        Mail::to($recipients)
-            ->send(new InvoiceMail($invoice, $publicUrl, $pdfUrl));
-    }
-}
-```
-
----
-
-## 🚀 Implementation Phases
-
-### Overall Progress: ✅ Architecture Refactored - Organization-Centric Implementation Complete
-
-### Phase 1: Jetstream Setup & Authentication
-**Status**: ✅ Complete  
-**Progress**: 6/6 tasks completed
-
-- [x] Install and configure Laravel Jetstream
-- [x] Set up organization-based authentication  
-- [x] Create user registration and login flows
-- [x] Implement organization creation and management
-- [x] Add organization member invitation system
-- [x] Configure role-based permissions
-
-### Phase 2: Tenant Architecture & Global Scopes  
-**Status**: ✅ Complete (Architecture Simplified)  
-**Progress**: 6/6 tasks completed
-
-- [x] Consolidated Team/Company into Organization model
-- [x] Add organization_id to all tenant-scoped tables
-- [x] Implement organization-scoped data access
-- [x] Update existing models with new relationships
-- [x] Migrate existing data to organization structure
-- [x] Implement polymorphic location system
-
-### Phase 3: Organization Management & Currency System
-**Status**: ✅ Complete  
-**Progress**: 7/7 tasks completed
-
-- [x] Add currency fields to organizations and customers
-- [x] Implement currency selection during organization creation
-- [x] Create currency enum system with AED, USD, EUR, GBP, INR support
-- [x] Update money formatting throughout application
-- [x] Add organization ULID for public document sharing
-- [x] Implement tax template system per currency
-- [x] Create organization management interface
-
-### Phase 4: Enhanced Models & Relationships
-**Status**: ✅ Complete  
-**Progress**: 6/6 tasks completed
-
-- [x] Update all models with new relationships
-- [x] Implement automatic organization_id assignment
-- [x] Add currency logic to invoice creation
-- [x] Update factories for new schema
-- [x] Enhance validation rules with custom casts
-- [x] Update existing tests to pass 94.7% coverage
-
-### Phase 5: Public Routes & Branding
-**Status**: ✅ Complete  
-**Progress**: 6/6 tasks completed
-
-- [x] Implement ULID-based public routes
-- [x] Create public document viewing system
-- [x] Update public invoice/estimate templates
-- [x] Implement PDF generation with proper styling
-- [x] Add email document sharing functionality
-- [x] Create responsive public document pages
-
-### Phase 6: UI/UX Updates & Final Testing
-**Status**: ✅ Complete  
-**Progress**: 6/6 tasks completed
-
-- [x] Update Livewire components for organization-centric architecture
-- [x] Implement organization-scoped interfaces
-- [x] Add currency selection to forms
-- [x] Update navigation and dashboards
-- [x] Comprehensive testing with 94.7% coverage
-- [x] Performance optimization with proper database indexing
+#### Tax System
+- [x] Flexible tax templates per organization
+- [x] Multi-country support (India GST, UAE VAT, US Sales Tax, EU VAT, UK VAT)
+- [x] Tax categories and types
+- [x] Active/inactive toggle
+- [x] Metadata JSON for additional tax info
+- [x] Basis points storage for precision (1800 = 18%)
 
 ---
 
-## 🛠️ Technical Specifications
+## 6. Route Map
 
-### Technology Stack
+### Public Routes (No Auth)
 
-#### Core Framework
-- **Laravel**: 11.19.3
-- **PHP**: 8.4.8
-- **Database**: PostgreSQL
-- **Frontend**: Livewire 3.6.3 + luvi-ui/laravel-luvi (shadcn for Livewire)
-- **Testing**: Pest
-- **Container**: Laravel Sail
+| Method | URI | Handler | Rate Limit |
+|--------|-----|---------|------------|
+| GET | `/` | Homepage (redirect if authenticated) | - |
+| GET | `/terms-of-service` | TermsOfServiceController@show | - |
+| GET | `/privacy-policy` | PrivacyPolicyController@show | - |
+| GET | `/invoices/view/{ulid}` | PublicViewController@showInvoice | 60/min |
+| GET | `/estimates/view/{ulid}` | PublicViewController@showEstimate | 60/min |
+| GET | `/invoices/{ulid}/pdf` | PublicViewController@downloadInvoicePdf | 10/min |
+| GET | `/estimates/{ulid}/pdf` | PublicViewController@downloadEstimatePdf | 10/min |
 
-#### Key Packages
-- **akaunting/laravel-money**: Monetary value handling
-- **luvi-ui/laravel-luvi**: shadcn UI components for Livewire
-- **spatie/browsershot**: PDF generation using headless Chrome
-- **laravel/jetstream**: Authentication and team management
+### Auth Routes (Fortify)
 
-### Model Implementations
+| Method | URI | Purpose |
+|--------|-----|---------|
+| GET/POST | `/login` | Login |
+| POST | `/logout` | Logout |
+| GET/POST | `/register` | Registration |
+| GET/POST | `/forgot-password` | Password reset request |
+| GET/POST | `/reset-password/{token}` | Password reset |
+| GET | `/email/verify` | Email verification notice |
+| GET | `/email/verify/{id}/{hash}` | Verify email |
+| GET/POST | `/two-factor-challenge` | 2FA challenge |
+| User profile/password/2FA routes | Various `/user/*` paths | Profile management |
 
-#### Organization Model (Enhanced Team)
-```php
-class Organization extends Model {
-    use HasTeams, HasProfilePhoto;
-    
-    protected $table = 'teams';
-    
-    protected function casts(): array {
-        return [
-            'currency' => Currency::class,
-            'emails' => ContactCollectionCast::class,
-            'personal_team' => 'boolean',
-        ];
-    }
-    
-    public function customers() {
-        return $this->hasMany(Customer::class, 'organization_id');
-    }
-    
-    public function invoices() {
-        return $this->hasMany(Invoice::class, 'organization_id');
-    }
-    
-    public function taxTemplates() {
-        return $this->hasMany(TaxTemplate::class, 'organization_id');
-    }
-}
-```
+### Protected Routes (Auth + Verified)
 
-#### Currency Enum
-```php
-enum Currency: string {
-    case INR = 'INR';
-    case USD = 'USD';
-    case EUR = 'EUR';
-    case GBP = 'GBP';
-    case AUD = 'AUD';
-    case CAD = 'CAD';
-    case SGD = 'SGD';
-    case JPY = 'JPY';
-    case AED = 'AED';
-    
-    public function symbol(): string { /* ... */ }
-    public function name(): string { /* ... */ }
-    public static function default(): self { return self::INR; }
-}
-```
-
-### Testing Infrastructure
-
-#### Test Coverage
-- **Current Coverage**: 94.7%
-- **Test Count**: 233 tests
-- **Test Types**: Unit, Feature, Browser (Laravel Dusk)
-- **Test Helpers**: Custom factory methods and test helpers
-
-#### Test Commands
-```bash
-# Fresh database and run all tests
-sail php artisan migrate:fresh --env=testing
-sail php artisan test
-
-# Browser tests with screenshots
-sail php artisan dusk
-
-# Code formatting
-sail pint --dirty
-```
+| Method | URI | Component/Controller | Setup Required |
+|--------|-----|---------------------|----------------|
+| GET | `/organization/setup` | OrganizationSetup (Livewire) | No |
+| GET | `/dashboard` | dashboard view | Yes |
+| GET | `/organizations` | OrganizationManager (Livewire) | Yes |
+| GET | `/organization/edit` | OrganizationManager (auto-edit) | Yes |
+| GET | `/customers` | CustomerManager (Livewire) | Yes |
+| GET | `/invoices` | InvoiceList (Livewire) | Yes |
+| GET | `/invoices/create` | InvoiceForm (Livewire) | Yes |
+| GET | `/invoices/{invoice}/edit` | InvoiceForm (Livewire) | Yes |
+| GET | `/estimates/create` | InvoiceForm (Livewire) | Yes |
+| GET | `/numbering-series` | NumberingSeriesManager (Livewire) | Yes |
+| GET | `/teams/create` | TeamController@create | No |
+| GET | `/teams/{team}` | TeamController@show | No |
+| PUT | `/current-team` | CurrentTeamController@update | No |
 
 ---
 
-## 📋 Git Workflow & Quality Assurance
+## 7. Livewire Components
 
-### Development Standards
+### Domain Components (6)
 
-#### Pre-commit Checklist
-```bash
-# 1. Fresh test database
-sail php artisan migrate:fresh --env=testing
+| Component | Lines (PHP) | View Size | Purpose |
+|-----------|-------------|-----------|---------|
+| `InvoiceForm` | ~500 + 498 trait | 63KB | Invoice/estimate creation and editing with email modal |
+| `InvoiceList` | ~100 | 7.4KB | Paginated invoice list with CRUD actions |
+| `OrganizationManager` | ~580 | 36KB | Organization CRUD with locations, bank details, logo |
+| `OrganizationSetup` | ~456 | 28KB | 4-step onboarding wizard |
+| `CustomerManager` | ~400 | 27KB | Customer CRUD with contacts and locations |
+| `NumberingSeriesManager` | ~347 | 25KB | Invoice numbering series management |
 
-# 2. Run all tests (must pass 100%)
-sail php artisan test
+### Auth/Team Components (11)
 
-# 3. Run browser tests (must pass 100%)
-sail php artisan dusk
+| Component | Purpose |
+|-----------|---------|
+| `NavigationMenu` | Top nav with org switcher |
+| `Profile/UpdateProfileInformationForm` | Name, email, photo |
+| `Profile/UpdatePasswordForm` | Password change |
+| `Profile/DeleteUserForm` | Account deletion |
+| `Profile/TwoFactorAuthenticationForm` | 2FA setup |
+| `Profile/LogoutOtherBrowserSessionsForm` | Session management |
+| `Teams/TeamMemberManager` | Add/remove members, roles |
+| `Teams/UpdateTeamNameForm` | Team name editing |
+| `Teams/DeleteTeamForm` | Team deletion |
+| `Teams/CreateTeamForm` | New team creation |
+| `Teams/ApiTokenManager` | Sanctum token management |
 
-# 4. Format code
-sail pint --dirty
+### Shared Traits (2)
 
-# 5. Check for any remaining issues
-sail php artisan config:clear
-sail php artisan cache:clear
+| Trait | Lines | Purpose |
+|-------|-------|---------|
+| `InvoiceFormLogic` | 498 | Invoice form properties, validation, calculation, save logic |
+| `ManagesBankDetails` | 66 | Bank detail fields and value object conversion |
+
+---
+
+## 8. Services Layer
+
+### InvoiceCalculator
+- Calculates subtotal, tax, total from invoice items
+- Returns immutable `InvoiceTotals` value object
+- All operations in cents (integers)
+- 24 test cases covering edge cases
+
+### PdfService
+- HTTP-based PDF generation via Puppeteer Chrome service
+- Renders HTML via Laravel View engine, posts to Chrome service
+- Configurable via `config/services.chrome` env vars
+- Returns PDF binary or HTTP download response
+- Graceful error handling with user-friendly messages
+
+### InvoiceNumberingService
+- Format token replacement: {PREFIX}, {YEAR}, {MONTH}, {SEQUENCE:4}, {FY}, etc.
+- Reset frequencies: NEVER, YEARLY, MONTHLY, FINANCIAL_YEAR
+- Transaction-safe number generation
+- Auto-creates default series on first invoice
+- Financial year integration for tax compliance
+
+### EstimateToInvoiceConverter
+- Validates input is estimate type
+- Creates new invoice with estimate's data
+- Duplicates all items
+- Generates new invoice number
+- Recalculates totals
+
+---
+
+## 9. Security & Authorization
+
+### Multi-Tenant Data Isolation
+
+| Layer | Mechanism | Scope |
+|-------|-----------|-------|
+| Global Scope | `OrganizationScope` | Filters Invoice, Customer, TaxTemplate by current user's team |
+| Component Level | `$user->allTeams()` checks | All Livewire component actions verify team membership |
+| Route Level | `organization.setup` middleware | Enforces setup completion |
+| Policy Level | `TeamPolicy`, `InvoicePolicy`, `CustomerPolicy` | Gate-based authorization |
+
+### Policy Registration
+
+| Model | Policy | Registration |
+|-------|--------|-------------|
+| Organization | TeamPolicy | Explicit in PolicyServiceProvider |
+| Invoice | InvoicePolicy | Auto-discovery (exists but not explicitly registered) |
+| Customer | CustomerPolicy | Auto-discovery (exists but not explicitly registered) |
+
+### Rate Limiting
+- Login: 5/minute per email+IP
+- Two-factor: 5/minute per session
+- Public invoice views: 60/minute
+- Public PDF downloads: 10/minute
+
+### Authentication Stack
+- Fortify handles login, registration, password reset, email verification, 2FA
+- Sanctum for API token authentication
+- Session-based auth with `AuthenticateSession` middleware
+- HTTPS forced in production
+
+---
+
+## 10. Multi-Currency System
+
+### Supported Currencies (9)
+
+| Code | Symbol | Name | Subunit | Special |
+|------|--------|------|---------|---------|
+| INR | ₹ | Indian Rupee | Paise | Lakh/crore grouping |
+| USD | $ | US Dollar | Cents | Standard |
+| EUR | Euro | Euro | Cents | Standard |
+| GBP | £ | British Pound | Pence | Standard |
+| AUD | A$ | Australian Dollar | Cents | Standard |
+| CAD | C$ | Canadian Dollar | Cents | Standard |
+| SGD | S$ | Singapore Dollar | Cents | Standard |
+| JPY | ¥ | Japanese Yen | - | Zero decimal |
+| AED | د.إ | UAE Dirham | Fils | Standard |
+
+### Tax Templates by Currency
+
+| Currency | Templates |
+|----------|-----------|
+| INR | CGST 9%, SGST 9%, IGST 18%, GST 5/12/28%, TDS 10% |
+| AED | VAT 5%, VAT 0%, VAT Exempt, Excise Tax 50/99% |
+| USD | Sales Tax 4/6/8.25%, No Tax |
+| EUR | VAT 7/19%, VAT 0% |
+| GBP | VAT 5/20%, VAT 0% |
+
+---
+
+## 11. Invoice Numbering System
+
+### Format Tokens
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `{PREFIX}` | Series prefix | INV, EST |
+| `{YEAR}` | Full year | 2026 |
+| `{YEAR:2}` | 2-digit year | 26 |
+| `{MONTH}` | Month (01-12) | 02 |
+| `{MONTH:3}` | Abbreviation | Feb |
+| `{DAY}` | Day (01-31) | 23 |
+| `{SEQUENCE}` | Number | 1 |
+| `{SEQUENCE:4}` | Padded | 0001 |
+| `{FY}` | Financial year | 2025-26 |
+| `{FY_START}` | FY start year | 2025 |
+| `{FY_END}` | FY end year | 2026 |
+
+### Examples
+- Standard: `INV-2026-02-0001`
+- Financial Year: `INV-2025-26-0001`
+- Location-specific: `DXB-INV-2026-0001`
+- Simple: `EST-0001`
+
+---
+
+## 12. Email System
+
+### Document Emails (DocumentMailer)
+- Queued via `ShouldQueue`
+- Custom subject and body support
+- CC recipients
+- PDF attachment option
+- Auto-detects invoice vs estimate for template selection
+- Generates public view URLs using ULID
+
+### Team Invitation Emails
+- Signed URL for secure acceptance
+- Markdown template
+- Expires naturally (no explicit TTL)
+
+---
+
+## 13. PDF Generation
+
+### Architecture
+- Chrome HTTP service running Puppeteer in Docker
+- Laravel renders HTML template, posts to Chrome service
+- Chrome converts HTML to A4 PDF
+- Config: `CHROME_SERVICE_URL` (default `http://chrome:3000`)
+
+### Endpoints
+- `POST /generate-pdf` - Accepts `{html, options}` JSON
+- `GET /health` - Health check
+
+---
+
+## 14. Testing Infrastructure
+
+### Test Suite Summary
+- **Framework**: Pest v4 with Playwright for browser tests
+- **Total Tests**: 737 passing, 4 skipped
+- **Coverage**: 94.7%
+- **Database**: RefreshDatabase trait on ALL tests
+
+### Test Categories
+
+| Category | Location | Count | Coverage |
+|----------|----------|-------|----------|
+| Unit - Models | tests/Unit/Models/ | ~100 | All 11 models |
+| Unit - Services | tests/Unit/Services/ | ~30 | InvoiceCalculator, PdfService |
+| Unit - Casts | tests/Unit/Casts/ | ~20 | All custom casts |
+| Unit - Enums | tests/Unit/Enums/ | ~10 | FinancialYearType, etc. |
+| Unit - Livewire | tests/Unit/Livewire/ | ~30 | OrganizationSetup, CustomerManager |
+| Feature - Auth | tests/Feature/ | ~50 | Registration, login, 2FA, profile |
+| Feature - Actions | tests/Feature/ | ~40 | Fortify & Jetstream actions |
+| Browser | tests/Browser/ | ~30 | 10 test files, Playwright |
+
+### Test Helpers (`tests/TestHelpers.php`)
+- `createUserWithTeam()` - User + personal org + team context
+- `createOrganizationWithLocation()` - Org with primary location + FY
+- `createCustomerWithLocation()` - Customer with location
+- `createInvoiceWithItems()` - Invoice with line items + relationships
+- `createLocation()` - Polymorphic location creation
+
+### Factory States (60+)
+- **UserFactory**: withPersonalTeam, withBusinessOrganization, persona states
+- **OrganizationFactory**: country-specific (usCompany, indianCompany, uaeCompany), setup states, business types
+- **InvoiceFactory**: type states, status states, currency states, industry states, amount ranges
+- **InvoiceItemFactory**: service types, tax rates, edge cases
+- **CustomerFactory**: industry-specific, geographic, relationship maturity states
+
+---
+
+## 15. Docker & Infrastructure
+
+### Production Dockerfiles (3 variants)
+1. `Dockerfile.nginx-fpm` - ServerSideUp PHP 8.5 FPM + Nginx (primary)
+2. `Dockerfile.frankenphp` - FrankenPHP variant
+3. `Dockerfile.standalone` - Standalone variant
+
+### Multi-Stage Build
+```
+Stage 1: PHP Dependencies (composer install --no-dev)
+Stage 2: Frontend Build (bun install + bun run build)
+Stage 3: Clean App Assembly (merge PHP deps + frontend assets)
+Stage 4: Production (PHP extensions + supervisor + nginx)
 ```
 
-### Quality Metrics
-- **Test Coverage**: 94.7% maintained
-- **Code Standards**: PSR-12 compliant
-- **Performance**: Optimized database queries
-- **Security**: Proper input validation and sanitization
+### PHP Extensions (Production)
+pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
+
+### Environment Defaults
+- APP_ENV=production, APP_DEBUG=false
+- LOG_CHANNEL=stderr (JSON formatter)
+- SESSION_DRIVER=redis, CACHE_DRIVER=redis, QUEUE_CONNECTION=redis
+
+### Chrome PDF Service
+- Separate container: `docker/chrome/pdf-service.js`
+- Node.js + Puppeteer, port 3000
+- Health check at `/health`
+- Per-request browser launch (no pooling)
 
 ---
 
-## 📊 Progress Tracking
+## 16. Bugs & Issues
 
-### Technical Milestones
-- [x] Zero failing tests throughout development
-- [x] 100% browser test pass rate maintained
-- [x] Proper organization isolation verified
-- [x] Multi-currency functionality working (AED, USD, EUR, GBP, INR)
-- [x] ULID-based public URLs functional
-- [x] Public routes accessible with proper styling
+### Critical
 
-### User Experience Goals
-- [x] Seamless user onboarding (< 2 minutes)
-- [x] Intuitive organization management
-- [x] Fast and responsive interface
-- [x] Clear currency selection and display
-- [x] Professional public invoice pages
+| # | Issue | Location | Impact |
+|---|-------|----------|--------|
+| 1 | **team_user table missing FK constraints** | Database schema | No referential integrity for team membership pivot. Could have orphaned rows. |
 
-### Performance Targets
-- [x] Page load times < 2 seconds
-- [x] Database query optimization
-- [x] Proper caching implementation
-- [x] Mobile-responsive design
-- [x] SEO-optimized public pages
+### High
 
----
+| # | Issue | Location | Impact |
+|---|-------|----------|--------|
+| 2 | **InvoicePolicy vs CustomerPolicy inconsistency** | `app/Policies/` | InvoicePolicy uses `$user->allTeams()` (cross-team access), CustomerPolicy uses `$user->currentTeam?->id` (current team only). Should be consistent. |
+| 3 | **InvoicePolicy and CustomerPolicy not explicitly registered** | `PolicyServiceProvider` | Only TeamPolicy is registered. Others rely on auto-discovery which should work in Laravel 12 but is fragile. |
+| 4 | **DeleteUser doesn't handle team ownership** | `app/Actions/Jetstream/DeleteUser.php` | User deletion orphans owned organizations. No ownership transfer mechanism. |
+| 5 | **country_code type inconsistency** | Database schema | `teams.country_code` is varchar(3), `tax_templates.country_code` is char(2), `locations.country` is varchar(3). Should be consistent. |
 
-## 🎯 Success Criteria
+### Medium
 
-### Implementation Achievements
-- **Architecture**: Successfully refactored to organization-centric model
-- **Multi-Currency**: Full support for 9 currencies with tax templates
-- **Public Access**: ULID-based public document sharing
-- **Testing**: 94.7% test coverage with comprehensive test suite
-- **Performance**: Optimized database queries and caching
-- **User Experience**: Streamlined organization management
+| # | Issue | Location | Impact |
+|---|-------|----------|--------|
+| 6 | **InvoiceForm broad exception handling in mount()** | `app/Livewire/InvoiceForm.php` (lines 69-79) | Catches all exceptions, could mask database or model issues. |
+| 7 | **OrganizationSetup redirects from render()** | `app/Livewire/OrganizationSetup.php` (line 445) | Redirecting from `render()` is unconventional and may cause Livewire issues. |
+| 8 | **array_column() on ContactCollection** | `app/Livewire/OrganizationSetup.php` (line 106) | Assumes specific structure. Should use ContactCollection API instead. |
+| 9 | **BankDetailsCast nullable inconsistency** | `app/Casts/BankDetailsCast.php` | `get()` always returns BankDetails instance, `set()` returns null for empty. |
+| 10 | **NumberingSeriesManager validation gap** | `app/Livewire/NumberingSeriesManager.php` | No validation that selected location belongs to selected organization. |
+| 11 | **LogoutOtherBrowserSessionsForm** | `app/Livewire/Profile/LogoutOtherBrowserSessionsForm.php` | Only works with database sessions, silently fails with other session drivers. |
+| 12 | **No event listeners registered** | App-wide | 10 team events exist but no listeners handle them. Events fire into void. |
 
-### Demo Data
-- **Organizations**: 8 organizations across different currencies
-- **Customers**: 30+ customers with realistic business data
-- **Invoices**: 160+ invoices and estimates with various statuses
-- **Tax Templates**: Currency-specific tax templates for all supported currencies
+### Low
+
+| # | Issue | Location | Impact |
+|---|-------|----------|--------|
+| 13 | **InvoiceStatus 'accepted' unused** | Database check constraint | Status value exists in DB but not clearly used in application flow. |
+| 14 | **Chrome PDF service single-browser-per-request** | `docker/chrome/pdf-service.js` | No connection pooling. Inefficient under load. |
+| 15 | **ULID format not validated in routes** | `routes/web.php` | Invalid ULIDs hit database query instead of being rejected at route level. |
 
 ---
 
-## 📝 Notes and Decisions
+## 17. Improvements Needed
 
-### Architecture Decisions
-1. **Organization-Centric**: Simplified from dual Team/Company to single Organization model
-2. **Polymorphic Locations**: Unified location management for organizations and customers
-3. **Currency Enum**: Type-safe currency handling with tax template integration
-4. **ULID Public URLs**: Secure and SEO-friendly public document sharing
+### Security Hardening (Priority: High)
 
-### Current State
-- **System Status**: Production-ready with comprehensive test coverage
-- **Data Integrity**: All relationships properly configured with foreign key constraints
-- **Security**: Organization-scoped access control implemented
-- **Performance**: Optimized queries with proper database indexing
+1. **Register all policies explicitly** in PolicyServiceProvider
+   - Add `InvoicePolicy` and `CustomerPolicy` registration
+   - Verify auto-discovery works as fallback
 
-### Future Enhancements
-- [ ] Custom domain support for organizations
-- [ ] Advanced payment gateway integration
-- [ ] Multi-language support
+2. **Align policy authorization logic**
+   - Decide on `allTeams()` vs `currentTeam` for Invoice and Customer policies
+   - Document the chosen strategy
+
+3. **Add FK constraints to team_user table**
+   - Migration to add foreign keys to team_id and user_id
+   - Clean up any orphaned rows first
+
+4. **Implement team ownership transfer**
+   - Before user deletion, transfer or delete owned organizations
+   - Add UI for ownership transfer
+
+5. **Add rate limiting to password reset**
+   - Prevent email enumeration via `/forgot-password`
+
+### Code Quality (Priority: Medium)
+
+6. **Break down large Livewire views**
+   - `invoice-form.blade.php` (63KB) should extract sub-components
+   - `organization-manager.blade.php` (36KB) should extract location form
+   - Extract shared location management component
+
+7. **Extract shared location component**
+   - Both OrganizationManager and CustomerManager manage locations
+   - Create reusable Livewire component for location CRUD
+
+8. **Standardize country_code column types**
+   - Migrate all to consistent char(2) ISO 3166-1 alpha-2
+
+9. **Improve error handling in InvoiceForm mount()**
+   - Replace broad catch with specific exception handling
+   - Log properly, show user-friendly error
+
+10. **Add interface layer for services**
+    - Create `PdfGeneratorInterface`, `NumberingServiceInterface`
+    - Improves testability and allows swapping implementations
+
+### Testing (Priority: Medium)
+
+11. **Add security isolation tests**
+    - Cross-tenant access prevention tests
+    - Policy enforcement tests for all models
+    - OrganizationScope bypass scenarios
+
+12. **Add PDF service integration tests**
+    - Currently skipped when Chrome unavailable
+    - Add mock-based tests for PDF generation flow
+
+13. **Add email attachment tests**
+    - Verify PDF attachment inclusion
+    - Test custom body and CC recipients
+
+14. **Add edge case tests for numbering service**
+    - Concurrent number generation
+    - Reset frequency edge cases
+    - Financial year boundary transitions
+
+### Performance (Priority: Low)
+
+15. **Add browser pool to Chrome PDF service**
+    - Use `puppeteer-cluster` for connection pooling
+    - Significantly improves PDF generation throughput
+
+16. **Review N+1 queries in Livewire components**
+    - Ensure eager loading on all relationship access
+    - Add query logging in development
+
+17. **Implement caching for tax templates**
+    - Tax templates rarely change, ideal for caching
+    - Cache per organization with invalidation on update
+
+### UX Improvements (Priority: Low)
+
+18. **Add email preview before send**
+    - Show rendered email body before sending
+    - Reduce accidental sends
+
+19. **Add loading states for all async operations**
+    - PDF generation, email sending, form saves
+    - Wire:loading indicators throughout
+
+20. **Implement invoice payment tracking**
+    - Record partial payments
+    - Payment history per invoice
+    - Auto-update status on full payment
+
+---
+
+## 18. Future Roadmap
+
+### Phase Next: Stability & Security
+- [ ] Fix all Critical and High bugs (items 1-5)
+- [ ] Register all policies explicitly
+- [ ] Add team_user FK constraints
+- [ ] Security isolation test suite
+
+### Phase After: Feature Completion
+- [ ] Payment tracking system
+- [ ] Recurring invoices
+- [ ] Dashboard analytics (revenue charts, outstanding amounts)
+- [ ] Customer portal (view all invoices, pay online)
+- [ ] Bulk operations (send multiple invoices, export CSV)
+
+### Long-term Vision
+- [ ] Custom domain support per organization
+- [ ] Payment gateway integration (Stripe, Razorpay)
+- [ ] Multi-language support (i18n infrastructure exists)
 - [ ] Advanced reporting and analytics
-- [ ] API rate limiting per organization
-- [ ] Webhook system for integrations
+- [ ] API for third-party integrations
+- [ ] Webhook system for external automation
+- [ ] Mobile-optimized progressive web app
+- [ ] AI-powered invoice data extraction from photos
 
 ---
 
-**Document Status**: ✅ Implementation Complete - Organization-Centric Architecture  
-**Next Action**: Monitor system performance and plan advanced features
+## Models Reference
+
+### Enums
+
+| Enum | Values |
+|------|--------|
+| `Currency` | INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED |
+| `InvoiceStatus` | draft, sent, accepted, paid, void |
+| `ResetFrequency` | NEVER, YEARLY, MONTHLY, FINANCIAL_YEAR |
+| `Country` | Multiple countries with defaults |
+| `FinancialYearType` | Various FY systems by country |
+
+### Value Objects
+
+| Class | Purpose | Fields |
+|-------|---------|--------|
+| `ContactCollection` | Immutable contact list | name, email per entry |
+| `BankDetails` | Bank account info | accountName, accountNumber, bankName, ifsc, branch, swift, pan |
+| `InvoiceTotals` | Calculation results | subtotal, tax, total (all in cents) |
+
+### Custom Casts
+
+| Cast | Model Column | Conversion |
+|------|-------------|------------|
+| `ContactCollectionCast` | emails (json) | JSON <-> ContactCollection |
+| `BankDetailsCast` | bank_details (json) | JSON <-> BankDetails |
+| `ExchangeRateCast` | exchange_rate (bigint) | Micro-units <-> decimal string |
 
 ---
 
-*This PRD reflects the current implemented state of the multitenant SaaS transformation project. The organization-centric architecture provides a solid foundation for future enhancements while maintaining code quality and test coverage.*
+**Document Status**: Comprehensive audit complete
+**Branch**: `with-jetstream` (post-Jetstream removal, Livewire v4)
+**Last Test Run**: 737 passing, 4 skipped, 94.7% coverage
