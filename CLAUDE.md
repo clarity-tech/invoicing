@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Database**: PostgreSQL
 - **UI Framework**: Livewire 4.1.4 + luvi-ui/laravel-luvi (shadcn for Livewire)
 - **Testing**: Pest
-- **Package Manager**: Bun
+- **Package Manager**: npm
 - **Container**: Laravel Sail
 
 ### Key Packages
@@ -150,13 +150,13 @@ sail pint --test
 ### Frontend Commands
 ```bash
 # Install dependencies
-sail bun install
+sail npm install
 
 # Development build
-sail bun run dev
+sail npm run dev
 
 # Production build
-sail bun run build
+sail npm run build
 ```
 
 ### Shell Access
@@ -364,8 +364,8 @@ it('user can access feature', function () {
   - All test emails use `.test` TLD (e.g., `user@example.test`)
 
 **Package Management:**
-- Bun for frontend dependencies
-- No package-lock.json (deleted - use bun.lock only)
+- npm for frontend dependencies
+- Uses package-lock.json for dependency locking
 - Puppeteer available globally, not as project dependency
 
 **Browser Testing Setup:**
