@@ -618,17 +618,17 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 | 4 | ~~DeleteUser doesn't handle team ownership~~ | `app/Actions/Jetstream/DeleteUser.php` | **FIXED** — Prevents deletion when owned orgs have members, purges sole-owner orgs, 11 new tests |
 | 5 | ~~country_code type inconsistency~~ | Database schema | **FIXED** — All columns standardized to char(2) ISO 3166-1 alpha-2 in original migrations |
 
-### Medium
+### Medium — All Resolved
 
-| # | Issue | Location | Impact |
+| # | Issue | Location | Status |
 |---|-------|----------|--------|
-| 6 | **InvoiceForm broad exception handling in mount()** | `app/Livewire/InvoiceForm.php` (lines 69-79) | Catches all exceptions, could mask database or model issues. |
-| 7 | **OrganizationSetup redirects from render()** | `app/Livewire/OrganizationSetup.php` (line 445) | Redirecting from `render()` is unconventional and may cause Livewire issues. |
-| 8 | **array_column() on ContactCollection** | `app/Livewire/OrganizationSetup.php` (line 106) | Assumes specific structure. Should use ContactCollection API instead. |
-| 9 | **BankDetailsCast nullable inconsistency** | `app/Casts/BankDetailsCast.php` | `get()` always returns BankDetails instance, `set()` returns null for empty. |
-| 10 | **NumberingSeriesManager validation gap** | `app/Livewire/NumberingSeriesManager.php` | No validation that selected location belongs to selected organization. |
-| 11 | **LogoutOtherBrowserSessionsForm** | `app/Livewire/Profile/LogoutOtherBrowserSessionsForm.php` | Only works with database sessions, silently fails with other session drivers. |
-| 12 | **No event listeners registered** | App-wide | 10 team events exist but no listeners handle them. Events fire into void. |
+| 6 | ~~InvoiceForm broad exception handling in mount()~~ | `app/Livewire/Traits/InvoiceFormLogic.php` | **FIXED** — No try-catch in mount(); added null-safe operator for orphaned location relationships |
+| 7 | ~~OrganizationSetup redirects from render()~~ | `app/Livewire/OrganizationSetup.php` | **NON-ISSUE** — Redirect is in mount() (not render()), which is standard Livewire pattern |
+| 8 | ~~array_column() on ContactCollection~~ | `app/Livewire/OrganizationSetup.php` | **ALREADY FIXED** — Code uses `->getEmails()` ContactCollection API |
+| 9 | ~~BankDetailsCast nullable inconsistency~~ | `app/Casts/BankDetailsCast.php` | **FIXED** — `get()` now always returns BankDetails instance (empty() instead of null) |
+| 10 | ~~NumberingSeriesManager validation gap~~ | `app/Livewire/NumberingSeriesManager.php` | **ALREADY FIXED** — Lines 102-114 validate location belongs to organization |
+| 11 | ~~LogoutOtherBrowserSessionsForm~~ | `resources/views/profile/show.blade.php` | **FIXED** — Component only renders when session driver is 'database' |
+| 12 | ~~No event listeners registered~~ | `app/Models/Organization.php` | **FIXED** — Removed unused $dispatchesEvents and 3 empty event classes; kept action-dispatched events as extension points |
 
 ### Low
 
@@ -665,9 +665,7 @@ pdo_pgsql, pgsql, redis, gd, bcmath, intl, exif
 8. ~~**Standardize country_code column types**~~ — **DONE** (already char(2) across all tables)
    - Verified: locations.country, teams.country_code, tax_templates.country_code all char(2)
 
-9. **Improve error handling in InvoiceForm mount()**
-   - Replace broad catch with specific exception handling
-   - Log properly, show user-friendly error
+9. ~~**Improve error handling in InvoiceForm mount()**~~ — **DONE** (no broad try-catch; added null-safe operators for orphaned relationships)
 
 10. **Add interface layer for services**
     - Create `PdfGeneratorInterface`, `NumberingServiceInterface`

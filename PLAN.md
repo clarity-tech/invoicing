@@ -269,6 +269,14 @@ All testing tasks are now complete:
 - **Email Attachment & Integration Tests**: 12 tests — CC recipients, custom body/subject, multiple recipients, public URLs
 - **Numbering Service Edge Cases**: 17 tests — monthly/FY reset boundaries, FY validation errors, format tokens (DAY, MONTH:3, FY, FY_START, FY_END), createDefaultSeries idempotency
 
+### Medium Bug Fixes Completed (PRD #6-12) ✅
+- **Bug #6**: Null-safe operators in `InvoiceFormLogic.php` for orphaned location relationships
+- **Bug #7**: Non-issue — redirect is in mount() (standard Livewire pattern)
+- **Bug #8**: Already fixed — code uses `->getEmails()` ContactCollection API
+- **Bug #9**: `BankDetailsCast::get()` always returns BankDetails instance instead of null
+- **Bug #11**: `logout-other-browser-sessions-form` only renders when session driver is 'database'
+- **Bug #12**: Removed unused `$dispatchesEvents` and 3 empty event classes (TeamCreated/Updated/Deleted)
+
 ### Additional Improvements Completed
 - **Blade View Refactoring (PRD #6-7)**: Extracted 17 partials from 3 large Livewire views + 1 shared partial
 - **Country Code Standardization (PRD #8)**: Confirmed all char(2) ISO 3166-1 alpha-2 across all tables
@@ -320,7 +328,7 @@ All testing tasks are now complete:
 **Phase 3 - Team Management**: ⏳ 0% (0/2 tasks) — deferred, not critical
 **Phase 4 - Testing**: ✅ 100% COMPLETE (3/3 tasks)
 
-**Test Count**: 839 passing, 4 skipped (2425 assertions)
+**Test Count**: 841 passing, 4 skipped (2432 assertions)
 **Last Updated**: 2026-02-24
 **Next Priority**: Phase 3 team management (optional), or feature development
 
