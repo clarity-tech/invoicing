@@ -19,9 +19,10 @@ class ProductionCustomerSeeder extends Seeder
 
         // Get Clarity Technologies organization
         $clarityOrg = Organization::where('company_name', 'Clarity Technologies')->first();
-        
-        if (!$clarityOrg) {
+
+        if (! $clarityOrg) {
             $this->command->error('Clarity Technologies organization not found. Please run ProductionUserSeeder first.');
+
             return;
         }
 
@@ -96,15 +97,15 @@ class ProductionCustomerSeeder extends Seeder
         $this->command->info('✓ Created RxNow Pharmacy LLC (Dubai, AED)');
         $this->command->info('  Address: Shop 12, The Wings block B, Arjan, Dubai, UAE');
         $this->command->info('  Emails: billing@rxnow.ae, info@rxnow.ae');
-        
+
         $this->command->info('✓ Created DocOnline Health India Pvt Ltd (Bangalore, INR)');
         $this->command->info('  Address: 6th Floor, Unit nos 3 & 4. Vayudooth Chambers 15 & 16, Trinity Junction, Mahatma Gandhi Rd, Bengaluru 560001 Karnataka');
         $this->command->info('  GSTIN: 29AAFCD9711R1ZV');
-        
+
         $this->command->info('✓ Created Krishna Institute of Medical Sciences Limited (Hyderabad, INR)');
         $this->command->info('  Address: 1-8-31/1, MINISTER ROAD, Secunderabad 500003 Telangana');
         $this->command->info('  GSTIN: 36AACCK2540G1ZU');
-        
+
         $this->command->info('Production customers created successfully!');
     }
 }
