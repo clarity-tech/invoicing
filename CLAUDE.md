@@ -107,6 +107,17 @@ ls -la tests/Browser/Screenshots/
 # Note: Uses Playwright (runs inside app container, no external browser service)
 ```
 
+### Production Image Testing (FrankenPHP + Octane)
+```bash
+# Build the production Docker image and run browser tests against it.
+# Validates: Docker build, entrypoint, Octane serving, singleton leaks.
+# Requires: Docker on host + running Sail (sail up -d)
+./docker/production/test-octane.sh
+
+# Same script runs in CI (test-octane job) for local/CI parity.
+# Uses port 8001 to avoid conflicts with Sail on port 80.
+```
+
 ### Database Commands
 ```bash
 # Check migration status
@@ -222,7 +233,7 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current: 972+ tests (895 Unit/Feature + 77 Browser), maintain coverage above 90%
+- Current: 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets, maintain coverage above 90%
 - Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
@@ -361,7 +372,7 @@ it('user can access feature', function () {
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 972+ tests (895 Unit/Feature + 77 Browser) with 94.7% coverage
+- 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets
 - Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
 - Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 - Edge case testing for large numbers, null values, decimal precision
@@ -376,7 +387,7 @@ it('user can access feature', function () {
 
 **Package Management:**
 - Bun for frontend dependencies
-- Uses bun.lockb for dependency locking
+- Uses bun.lock (text format) for dependency locking
 - Puppeteer available globally, not as project dependency
 
 **Browser Testing Setup:**
@@ -502,7 +513,7 @@ invoice_numbering_series:
 
 **Browser Test Status:**
 - **Framework**: Pest Browser (Playwright) - migrated from Dusk
-- **Tests**: 8 test files covering smoke, auth, dashboard, org, customer, invoice, public views, a11y
+- **Tests**: 19 browser test files covering smoke, auth, CRUD, journeys, screenshots, accessibility
 
 **Before ending a session:**
 1. **Update PLAN.md** with all completed checkboxes and new discoveries
