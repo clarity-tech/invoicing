@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import AppLayout from '@/Layouts/AppLayout.vue';
 import InvoiceForm from '@/Components/Invoice/InvoiceForm.vue';
-import type { Customer, Location, TaxTemplate, InvoiceNumberingSeries } from '@/types';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import type {
+    Customer,
+    Location,
+    TaxTemplate,
+    InvoiceNumberingSeries,
+} from '@/types';
 
 defineProps<{
     type: 'invoice' | 'estimate';
@@ -22,8 +27,10 @@ defineProps<{
 </script>
 
 <template>
-    <AppLayout :title="`Create ${type === 'estimate' ? 'Estimate' : 'Invoice'}`">
-        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <AppLayout
+        :title="`Create ${type === 'estimate' ? 'Estimate' : 'Invoice'}`"
+    >
+        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
             <InvoiceForm
                 mode="create"
                 :type="type"

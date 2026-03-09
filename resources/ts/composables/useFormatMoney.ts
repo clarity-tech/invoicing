@@ -1,6 +1,9 @@
 import type { Currency } from '@/types';
 
-const CURRENCY_CONFIG: Record<Currency, { symbol: string; locale: string; subunitName: string }> = {
+const CURRENCY_CONFIG: Record<
+    Currency,
+    { symbol: string; locale: string; subunitName: string }
+> = {
     INR: { symbol: '₹', locale: 'en-IN', subunitName: 'Paise' },
     USD: { symbol: '$', locale: 'en-US', subunitName: 'Cents' },
     EUR: { symbol: '€', locale: 'de-DE', subunitName: 'Cents' },
@@ -17,6 +20,7 @@ const CURRENCY_CONFIG: Record<Currency, { symbol: string; locale: string; subuni
  */
 export function formatMoney(amountInCents: number, currency: Currency): string {
     const config = CURRENCY_CONFIG[currency];
+
     if (!config) {
         return `${currency} ${(amountInCents / 100).toFixed(2)}`;
     }

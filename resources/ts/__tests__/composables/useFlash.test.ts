@@ -17,7 +17,11 @@ describe('useFlash', () => {
 
     it('returns flash and hasFlash', () => {
         const { flash, hasFlash } = useFlash();
-        expect(flash.value).toEqual({ success: null, error: null, message: null });
+        expect(flash.value).toEqual({
+            success: null,
+            error: null,
+            message: null,
+        });
         expect(hasFlash.value).toBe(false);
     });
 
@@ -32,7 +36,9 @@ describe('useFlash', () => {
 
     it('detects error flash', () => {
         mockUsePage.mockReturnValue({
-            props: { flash: { success: null, error: 'Failed!', message: null } },
+            props: {
+                flash: { success: null, error: 'Failed!', message: null },
+            },
         });
         const { flash, hasFlash } = useFlash();
         expect(flash.value.error).toBe('Failed!');

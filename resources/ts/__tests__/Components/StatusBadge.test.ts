@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { describe, it, expect } from 'vitest';
 import StatusBadge from '@/Components/StatusBadge.vue';
 
-const statuses = ['draft', 'sent', 'accepted', 'partially_paid', 'paid', 'void'] as const;
+const statuses = [
+    'draft',
+    'sent',
+    'accepted',
+    'partially_paid',
+    'paid',
+    'void',
+] as const;
 const expectedLabels: Record<string, string> = {
     draft: 'Draft',
     sent: 'Sent',
