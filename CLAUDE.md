@@ -7,32 +7,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Configuration
 
 ### Environment
-- **Laravel Version**: 12.19.3
-- **PHP Version**: 8.5.2
-- **Database**: PostgreSQL
-- **UI Framework**: Livewire 4.1.4 + luvi-ui/laravel-luvi (shadcn for Livewire)
-- **Testing**: Pest (backend), Vitest (frontend)
+- **Laravel Version**: 13.x
+- **PHP Version**: 8.5
+- **Database**: PostgreSQL 17
+- **UI Framework**: Vue 3 + Inertia.js v3 (TypeScript, 100% TS codebase)
+- **CSS**: Tailwind CSS v4 (CSS-based `@theme` config, no tailwind.config.js)
+- **Testing**: Pest 4 (backend), Pest Browser + Playwright (browser), Vitest (frontend)
 - **Package Manager**: Bun
-- **Container**: Laravel Sail
+- **Container**: Laravel Sail (dev), ServerSideUp FrankenPHP + Octane (prod)
+- **Linting**: ESLint (Vue + TS + import ordering) + Prettier (Tailwind class sorting)
 
 ### Key Packages
 - `akaunting/laravel-money` - For monetary value handling
-- `luvi-ui/laravel-luvi` - shadcn UI components for Livewire
-- `spatie/browsershot` - PDF generation using headless Chrome
+- `laravel/octane` - FrankenPHP worker mode for production
+- `inertiajs/inertia-laravel` v3 - Server-side Inertia adapter
+- `gotenberg/gotenberg` - PDF generation via Docker sidecar (replaced Browsershot/Chrome)
 
 ## Development Commands
 
-### Container Management
-```bash
-# Start all services
-sail up -d
-
-# Stop all services
-sail down
-
-# View logs
-sail logs
-```
+> **First-time setup**: see README.md. TL;DR: `sail up -d && sail php artisan app:setup --seed && sail bun install && sail bun run build`
 
 ### Laravel Commands
 ```bash
@@ -45,14 +38,14 @@ sail php artisan make:migration [migration_name]
 # Create model with migration
 sail php artisan make:model [ModelName] -m
 
-# Create Livewire component
-sail php artisan make:livewire [ComponentName]
-
 # Create custom cast
 sail php artisan make:cast [CastName]
 
 # Create mailable
 sail php artisan make:mail [MailableName]
+
+# Regenerate Wayfinder typed routes (after route changes)
+sail php artisan wayfinder:generate --path=resources/js --no-interaction
 
 # Clear caches
 sail php artisan config:clear
@@ -107,17 +100,6 @@ ls -la tests/Browser/Screenshots/
 # Note: Uses Playwright (runs inside app container, no external browser service)
 ```
 
-### Production Image Testing (FrankenPHP + Octane)
-```bash
-# Build the production Docker image and run browser tests against it.
-# Validates: Docker build, entrypoint, Octane serving, singleton leaks.
-# Requires: Docker on host + running Sail (sail up -d)
-./docker/production/test-octane.sh
-
-# Same script runs in CI (test-octane job) for local/CI parity.
-# Uses port 8001 to avoid conflicts with Sail on port 80.
-```
-
 ### Database Commands
 ```bash
 # Check migration status
@@ -136,26 +118,34 @@ sail php artisan db:seed --class=ProductionSeeder
 sail php artisan migrate:rollback
 ```
 
-### Production Seeders
-- **ProductionSeeder.php** - Main orchestrator with environment safety for production/staging/testing
-- **ProductionUserSeeder.php** - Clarity Technologies organization with static users (accounts@claritytech.io, manash@claritytech.io)
-- **ProductionCustomerSeeder.php** - Three real customers with accurate addresses and GSTIN numbers:
-  - RxNow Pharmacy LLC (Dubai, AED currency)
-  - DocOnline Health India Pvt Ltd (Bangalore, INR currency, GSTIN: 29AAFCD9711R1ZV)
-  - Krishna Institute of Medical Sciences (Hyderabad, INR currency, GSTIN: 36AACCK2540G1ZU)
-- **ProductionInvoiceSeeder.php** - Sample multi-currency invoices and estimates for demonstration
-- **Environment Safety**: Production seeders can run in any environment but ask for confirmation in production/staging
-
-### Code Formatting Commands
+### Code Formatting & Linting Commands
 ```bash
-# Format current uncommitted changes with Laravel Pint (ALWAYS run before commits)
+# PHP: Format current uncommitted changes with Laravel Pint (ALWAYS run before commits)
 sail pint --dirty
 
-# Format specific files
+# PHP: Format specific files
 sail pint app/Models/Invoice.php
 
-# Check formatting without fixing
+# PHP: Check formatting without fixing
 sail pint --test
+
+# Frontend: ESLint (fix all issues)
+sail bun run lint
+
+# Frontend: ESLint (check only, no fix)
+sail bun run lint:check
+
+# Frontend: Prettier (format all resources/)
+sail bun run format
+
+# Frontend: Prettier (check only)
+sail bun run format:check
+
+# Frontend: TypeScript type check
+sail bun run types:check
+
+# BEFORE EVERY COMMIT: Run both PHP and frontend formatters
+sail pint --dirty && sail bun run lint && sail bun run format
 ```
 
 ### Frontend Commands
@@ -177,18 +167,17 @@ sail bun run test:watch
 
 # Run frontend tests with coverage
 sail bun run test:coverage
-```
 
-### Shell Access
-```bash
-# Access container shell for Linux commands
-sail shell
+# Lint TypeScript/Vue (ESLint)
+sail bun run lint          # fix issues
+sail bun run lint:check    # check only
 
-# Access PostgreSQL directly
-sail psql
+# Format with Prettier
+sail bun run format        # fix formatting
+sail bun run format:check  # check only
 
-# Access database via pgweb interface
-# Open http://localhost:8081 in browser
+# TypeScript type check
+sail bun run types:check
 ```
 
 ## Architecture Overview
@@ -233,7 +222,7 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current: 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets, maintain coverage above 90%
+- Current: 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
 - Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
@@ -300,7 +289,10 @@ it('user can access feature', function () {
 ```
 
 **Commit Guidelines:**
-- **ALWAYS run `sail pint --dirty` before every commit** to format uncommitted changes
+- **ALWAYS run ALL formatters before every commit:**
+  1. `sail pint --dirty` — PHP formatting
+  2. `sail bun run lint` — ESLint fix (Vue + TypeScript)
+  3. `sail bun run format` — Prettier (Tailwind class sorting)
 - Atomic, conventional commits with format: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
 - All tests must pass before commit
 - Commit regularly with meaningful messages
@@ -321,34 +313,47 @@ it('user can access feature', function () {
 
 **Services:**
 - `InvoiceCalculator` - Business logic for financial calculations
-- `PdfService` - PDF generation using Spatie Browsershot (requires Puppeteer globally)
+- `PdfService` - PDF generation via Gotenberg (multipart/form-data API)
 - `EstimateToInvoiceConverter` - Business logic for estimate-to-invoice conversion
 - `DocumentMailer` - Email functionality for sending documents
 
-**Livewire Components:**
-- `OrganizationManager` / `CustomerManager` - Full CRUD with location and email management
-- `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations and tax template integration
+**Controllers (Inertia):**
+- `DashboardController` - Analytics with period filters, KPIs, trends
+- `OrganizationController` - Organization CRUD with show/edit pages, logo upload, bank details
+- `OrganizationSetupController` - 4-step setup wizard
+- `CustomerController` - Customer CRUD with location management
+- `InvoiceController` - Invoice/estimate CRUD, duplicate, convert, email, PDF
+- `NumberingSeriesController` - Numbering series CRUD with live preview
+- `UserProfileController` - Profile settings (Inertia render)
+- `TeamController` - Team management with member roles
 
 **Custom Casts:**
 - `ContactCollectionCast` - Seamless JSON ↔ ContactCollection conversion with error handling
 
 ## URL Structure & Routes
-- `/organizations` - Organization management (Livewire component)
-- `/customers` - Customer management (Livewire component)  
-- `/invoices` - Invoice and estimate management (Livewire component)
-- `/tax-templates` - Tax template management per organization
-- `/invoices/{ulid}` - Public invoice view (no auth required)
-- `/estimates/{ulid}` - Public estimate view (no auth required)
-- `/invoices/{ulid}/pdf` - Download invoice PDF
-- `/estimates/{ulid}/pdf` - Download estimate PDF
+- `/organizations` - Organization list (redirects to show for single-org users)
+- `/organizations/{id}` - Organization overview
+- `/organizations/{id}/edit` - Organization settings (tabbed: basics, location, bank, logo)
+- `/customers` - Customer management (Inertia + Vue)
+- `/invoices` - Invoice and estimate list with filters
+- `/invoices/create` - Create invoice form
+- `/invoices/{id}/edit` - Edit invoice form
+- `/estimates/create` - Create estimate form
+- `/numbering-series` - Invoice numbering series management
+- `/dashboard` - Business analytics dashboard
+- `/user/profile` - User profile management
+- `/teams/{id}` - Team/organization member management
+- `/organization/setup` - Organization setup wizard (first-time)
+- `/invoices/view/{ulid}` - Public invoice view (no auth)
+- `/estimates/view/{ulid}` - Public estimate view (no auth)
 
 ## Important Implementation Details
 
-**PDF Generation:**
-- Uses Spatie Browsershot with headless Chrome
-- Puppeteer available globally via `npx` (not in package.json)
-- A4 page format with professional styling
-- Graceful error handling for container architecture issues
+**PDF Generation (Gotenberg):**
+- Uses Gotenberg 8 (https://gotenberg.dev) — purpose-built HTML-to-PDF microservice
+- API: POST /forms/chromium/convert/html with index.html as multipart attachment
+- A4 page format (8.27x11.7in) with 10mm margins, printBackground enabled
+- Config: services.gotenberg.url, services.gotenberg.enabled, services.gotenberg.timeout
 
 **Multi-Currency Support:**
 - 9 supported currencies: INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED
@@ -364,16 +369,30 @@ it('user can access feature', function () {
 - Currency enum fields for type safety
 - JSON email collections with custom cast validation
 
-**Livewire Architecture:**
-- Full-stack components handle complete CRUD operations
-- `#[Computed]` properties for efficient data loading
-- Multi-step wizard pattern in InvoiceWizard
-- Real-time calculation updates in UI
+**Inertia + Vue 3 Architecture:**
+- Vue 3 pages in `resources/js/Pages/` with TypeScript and Composition API
+- Shared components in `resources/js/Components/`
+- Composables: `useFormatMoney`, `useInvoiceCalculator`, `useFlash`
+- Layouts: `AppLayout.vue`, `GuestLayout.vue`, `NavigationMenu.vue`
+- Wayfinder for type-safe routing (imports from `@/routes/` and `@/actions/`)
+- Inertia `useForm()` for all form submissions with server-side validation
+- Tab-based editing via URL query params (e.g., `/organizations/1/edit?tab=bank`)
+- `HandleInertiaRequests` middleware shares auth, flash, and team data
+- `lucide-vue-next` for icons
+
+**Object Storage (RustFS/S3):**
+- Local: RustFS (S3-compatible) via Sail on port 9000
+- Production: S3/DigitalOcean Spaces
+- Media library defaults to S3 disk via `config/media-library.php`
+- Bucket auto-created by `sail php artisan app:setup-storage`
+- Public read policy applied automatically for logo/attachment URLs
+- Console: http://localhost:9001 (sail/password)
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets
+- 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
 - Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
+- Feature tests use `assertInertia()` for Inertia response assertions
 - Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 - Edge case testing for large numbers, null values, decimal precision
 - Pest Browser tests with Playwright for real browser testing
@@ -387,8 +406,43 @@ it('user can access feature', function () {
 
 **Package Management:**
 - Bun for frontend dependencies
-- Uses bun.lock (text format) for dependency locking
-- Puppeteer available globally, not as project dependency
+- Uses bun.lockb for dependency locking
+- ESLint + Prettier for frontend linting/formatting (`bun run lint`, `bun run format`)
+
+**Frontend Directory Structure:**
+```
+resources/js/
+├── app.ts                    # Vue/Inertia entry point
+├── env.d.ts                  # TypeScript declarations
+├── types/index.d.ts          # Model/enum TypeScript interfaces
+├── lib/utils.ts              # cn() helper for Tailwind class merging
+├── composables/
+│   ├── useFormatMoney.ts     # Multi-currency formatting (9 currencies)
+│   ├── useInvoiceCalculator.ts # Client-side line item math
+│   └── useFlash.ts           # Flash message reactivity
+├── Layouts/
+│   ├── AppLayout.vue         # Authenticated layout with nav
+│   ├── GuestLayout.vue       # Auth pages layout
+│   └── NavigationMenu.vue    # Top navigation bar
+├── Pages/
+│   ├── Auth/                 # Login, Register, ForgotPassword, etc.
+│   ├── Dashboard.vue         # Analytics dashboard
+│   ├── Customers/Index.vue   # Customer list + CRUD
+│   ├── Invoices/             # Index, Create, Edit
+│   ├── NumberingSeries/      # Index with CRUD dialog
+│   ├── Organizations/        # Index, Show, Edit + Partials/
+│   ├── Profile/              # Show + Partials/
+│   └── Teams/                # Create, Show + Partials/
+├── Components/
+│   ├── Invoice/              # InvoiceForm, ItemRow, EmailModal
+│   ├── MoneyDisplay.vue      # Currency-aware amount display
+│   ├── StatusBadge.vue       # Invoice status badges
+│   ├── ConfirmationModal.vue # Reusable confirm dialog
+│   └── FlashMessages.vue     # Auto-dismissing flash alerts
+├── wayfinder/                # Generated Wayfinder helpers
+├── routes/                   # Generated typed route functions
+└── actions/                  # Generated typed controller actions
+```
 
 **Browser Testing Setup:**
 - Pest Browser plugin with Playwright (runs inside app container)
@@ -396,11 +450,6 @@ it('user can access feature', function () {
 - Automatic screenshot capture on failure
 - No external browser service needed (no Selenium)
 - Screenshots stored in `tests/Browser/Screenshots/`
-
-## Development Database
-- pgweb interface available at http://localhost:8081
-- Direct PostgreSQL access via `sail psql`
-- All services accessible at http://localhost
 
 ## Demo Data Summary
 - **Organizations**: 8 organizations with different currencies
@@ -416,115 +465,17 @@ it('user can access feature', function () {
   - EUR: VAT 7/19%, VAT 0%
   - GBP: VAT 5/20%, VAT 0%
 
-## UAE Customer Details
-- **RxNow LLC**: Healthcare company in Dubai Healthcare City
-- **1115inc**: Technology company at Al Warsan Towers, 305, Barsha Heights, Dubai
-  - Primary contact: ayshwarya@1115inc.com
-  - Secondary contact: consult@1115inc.com
+## Invoice Numbering Series
 
-## Invoice Numbering Series System
-
-### Architecture Overview
-The invoice numbering system provides flexible, multi-organization support with automatic series creation and comprehensive format pattern support.
-
-**Complete User Flow:**
-1. **User Registration** → Personal organization auto-created via Fortify/TeamServiceProvider
-2. **Organization Setup** → 4-step wizard for business configuration
-3. **Numbering Series** → Auto-created on first invoice OR manually managed
-4. **Invoice Creation** → Automatic series selection with manual override option
-
-### Key Components
-
-**Models:**
-- `InvoiceNumberingSeries` - Core model with reset logic and sequence management
-- Relationships: Organization (teams), Location, Invoice
-- Scopes: `active()`, `default()`, `forOrganization()`, `forLocation()`
-
-**Service Layer:**
-- `InvoiceNumberingService` - Business logic for number generation
-- Handles format pattern parsing, financial year integration, uniqueness validation
-- Transaction-safe number generation with automatic fallbacks
-
-**Management Interface:**
-- Route: `/numbering-series` → `NumberingSeriesManager` Livewire component
-- Full CRUD with real-time preview, security checks, default series management
-
-### Format Pattern Tokens
-```php
-{PREFIX}      // Series prefix (INV, EST, DXB-INV)
-{YEAR}        // Full year (2024)
-{YEAR:2}      // 2-digit year (24)
-{MONTH}       // Month number (01-12)
-{MONTH:3}     // Month abbreviation (Jan, Feb)
-{DAY}         // Day of month (01-31)
-{SEQUENCE}    // Sequential number
-{SEQUENCE:4}  // Padded sequence (0001, 0002)
-{FY}          // Financial year (2024-25)
-{FY_START}    // FY start year (2024)
-{FY_END}      // FY end year (2025)
-```
-
-### Reset Frequencies
-- `NEVER` - Continuous numbering (1, 2, 3, ...)
-- `YEARLY` - Reset every calendar year
-- `MONTHLY` - Reset every month  
-- `FINANCIAL_YEAR` - Reset based on organization's financial year
-
-### Series Selection Hierarchy
-1. **Specific series requested** → Use that series
-2. **Location provided** → Find location-specific active series
-3. **Fall back to default** → Use organization's default series
-4. **No default exists** → Create default series automatically
-
-### Database Schema
-```sql
-invoice_numbering_series:
-  - organization_id, location_id (nullable for org-wide)
-  - name, prefix, format_pattern
-  - current_number, reset_frequency
-  - is_active, is_default, last_reset_at
-```
-
-### Example Generated Numbers
-- Standard: `INV-2024-01-0001`
-- Financial Year: `INV-2024-25-0001`
-- Location-specific: `DXB-INV-2024-0001`
-- Simple: `EST-0001`
-
-### Financial Year Integration
-- Requires `organization.financial_year_type` and `country_code`
-- Automatic FY calculation based on current date
-- Validates FY setup for FY-based series and format patterns
-- Supports different country financial year systems
+Flexible numbering with format tokens (`{PREFIX}`, `{YEAR}`, `{SEQUENCE:4}`, `{FY}`, etc.), reset frequencies (never/yearly/monthly/financial_year), and per-organization/location series. Auto-created on first invoice if none exists. See `InvoiceNumberingService` and `InvoiceNumberingSeries` model for implementation details.
 
 ## Git Workflow
-- Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
+- Always run all formatters before commit:
+  1. `sail pint --dirty` — PHP (Laravel Pint)
+  2. `sail bun run lint` — Frontend (ESLint with Vue + TypeScript)
+  3. `sail bun run format` — Frontend (Prettier with Tailwind class sorting)
 - Always run tests for both (browser and unit) and make sure it passes before commit
-- make atomic isolated commits regulary after each feature or atomic changes are done
-
-## Session Continuation Instructions
-
-**CRITICAL: At the start of EVERY session:**
-1. **Check PLAN.md first** - Review current progress and task status
-2. **Update PLAN.md checkboxes** as tasks are completed during the session
-3. **Follow PLAN.md phases** for browser test fixes (currently Phase 1: Authentication)
-4. **Reference PRD.md** for project requirements validation
-5. **Run test status check**: `sail php artisan test tests/Browser` to see current browser test state
-
-**Browser Test Status:**
-- **Framework**: Pest Browser (Playwright) - migrated from Dusk
-- **Tests**: 19 browser test files covering smoke, auth, CRUD, journeys, screenshots, accessibility
-
-**Before ending a session:**
-1. **Update PLAN.md** with all completed checkboxes and new discoveries
-2. **Commit progress** with atomic commits following git workflow
-3. **Run formatting**: `sail pint --dirty`
-4. **Note next session focus** in PLAN.md
-
-**Reference Documents:**
-- `PLAN.md` - Comprehensive browser test fix tracking
-- `PRD.md` - Project requirements (100% browser test target)
-- `tests/TestHelpers.php` - Data creation helper functions
+- Make atomic isolated commits regularly after each feature or atomic changes are done
 
 ===
 
@@ -540,7 +491,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.5
-- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
+- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v3
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v13
 - laravel/octane (OCTANE) - v2
@@ -555,19 +506,23 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/telescope (TELESCOPE) - v5
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
-- @inertiajs/vue3 (INERTIA_VUE) - v2
+- @inertiajs/vue3 (INERTIA_VUE) - v3
 - vue (VUE) - v3
+- @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
+- eslint (ESLINT) - v10
+- prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v4
 
 ## Skills Activation
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
-- `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
-- `pest-testing` — Use this skill for Pest PHP testing in Laravel projects only. Trigger whenever any test is being written, edited, fixed, or refactored — including fixing tests that broke after a code change, adding assertions, converting PHPUnit to Pest, adding datasets, and TDD workflows. Always activate when the user asks how to write something in Pest, mentions test files or directories (tests/Feature, tests/Unit, tests/Browser), or needs browser testing, smoke testing multiple pages for JS errors, or architecture tests. Covers: it()/expect() syntax, datasets, mocking, browser testing (visit/click/fill), smoke testing, arch(), Livewire component tests, RefreshDatabase, and all Pest 4 features. Do not use for factories, seeders, migrations, controllers, models, or non-test PHP code.
-- `inertia-vue-development` — Develops Inertia.js v2 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using <Link>, <Form>, useForm, or router; working with deferred props, prefetching, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
+- `fortify-development` — ACTIVATE when the user works on authentication in Laravel. This includes login, registration, password reset, email verification, two-factor authentication (2FA/TOTP/QR codes/recovery codes), profile updates, password confirmation, or any auth-related routes and controllers. Activate when the user mentions Fortify, auth, authentication, login, register, signup, forgot password, verify email, 2FA, or references app/Actions/Fortify/, CreateNewUser, UpdateUserProfileInformation, FortifyServiceProvider, config/fortify.php, or auth guards. Fortify is the frontend-agnostic authentication backend for Laravel that registers all auth routes and controllers. Also activate when building SPA or headless authentication, customizing login redirects, overriding response contracts like LoginResponse, or configuring login throttling. Do NOT activate for Laravel Passport (OAuth2 API tokens), Socialite (OAuth social login), or non-auth Laravel features.
+- `laravel-best-practices` — Apply this skill whenever writing, reviewing, or refactoring Laravel PHP code. This includes creating or modifying controllers, models, migrations, form requests, policies, jobs, scheduled commands, service classes, and Eloquent queries. Triggers for N+1 and query performance issues, caching strategies, authorization and security patterns, validation, error handling, queue and job configuration, route definitions, and architectural decisions. Also use for Laravel code reviews and refactoring existing Laravel code to follow best practices. Covers any task involving Laravel backend PHP code patterns.
+- `wayfinder-development` — Use this skill for Laravel Wayfinder which auto-generates typed functions for Laravel controllers and routes. ALWAYS use this skill when frontend code needs to call backend routes or controller actions. Trigger when: connecting any React/Vue/Svelte/Inertia frontend to Laravel controllers, routes, building end-to-end features with both frontend and backend, wiring up forms or links to backend endpoints, fixing route-related TypeScript errors, importing from @/actions or @/routes, or running wayfinder:generate. Use Wayfinder route functions instead of hardcoded URLs. Covers: wayfinder() vite plugin, .url()/.get()/.post()/.form(), query params, route model binding, tree-shaking. Do not use for backend-only task
+- `pest-testing` — Use this skill for Pest PHP testing in Laravel projects only. Trigger whenever any test is being written, edited, fixed, or refactored — including fixing tests that broke after a code change, adding assertions, converting PHPUnit to Pest, adding datasets, and TDD workflows. Always activate when the user asks how to write something in Pest, mentions test files or directories (tests/Feature, tests/Unit, tests/Browser), or needs browser testing, smoke testing multiple pages for JS errors, or architecture tests. Covers: test()/it()/expect() syntax, datasets, mocking, browser testing (visit/click/fill), smoke testing, arch(), Livewire component tests, RefreshDatabase, and all Pest 4 features. Do not use for factories, seeders, migrations, controllers, models, or non-test PHP code.
+- `inertia-vue-development` — Develops Inertia.js v3 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using <Link>, <Form>, useForm, useHttp, setLayoutProps, or router; working with deferred props, prefetching, optimistic updates, instant visits, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
 - `tailwindcss-development` — Always invoke when the user's message includes 'tailwind' in any form. Also invoke for: building responsive grid layouts (multi-column card grids, product grids), flex/grid page structures (dashboards with sidebars, fixed topbars, mobile-toggle navs), styling UI components (cards, tables, navbars, pricing sections, forms, inputs, badges), adding dark mode variants, fixing spacing or typography, and Tailwind v3/v4 work. The core use case: writing or fixing Tailwind utility classes in HTML templates (Blade, JSX, Vue). Skip for backend PHP logic, database queries, API routes, JavaScript with no HTML/CSS component, CSS file audits, build tool configuration, and vanilla CSS.
-- `fortify-development` — Laravel Fortify headless authentication backend development. Activate when implementing authentication features including login, registration, password reset, email verification, two-factor authentication (2FA/TOTP), profile updates, headless auth, authentication scaffolding, or auth guards in Laravel applications.
 - `medialibrary-development` — Build and work with spatie/laravel-medialibrary features including associating files with Eloquent models, defining media collections and conversions, generating responsive images, and retrieving media URLs and paths.
 
 ## Conventions
@@ -601,82 +556,57 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 # Laravel Boost
 
-- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
+## Tools
 
-## Artisan Commands
+- Laravel Boost is an MCP server with tools designed specifically for this application. Prefer Boost tools over manual alternatives like shell commands or file reads.
+- Use `database-query` to run read-only queries against the database instead of writing raw SQL in tinker.
+- Use `database-schema` to inspect table structure before writing migrations or models.
+- Use `get-absolute-url` to resolve the correct scheme, domain, and port for project URLs. Always use this before sharing a URL with the user.
+- Use `browser-logs` to read browser logs, errors, and exceptions. Only recent logs are useful, ignore old entries.
 
-- Run Artisan commands directly via the command line (e.g., `vendor/bin/sail artisan route:list`, `vendor/bin/sail artisan tinker --execute "..."`).
-- Use `vendor/bin/sail artisan list` to discover available commands and `vendor/bin/sail artisan [command] --help` to check parameters.
+## Searching Documentation (IMPORTANT)
 
-## URLs
+- Always use `search-docs` before making code changes. Do not skip this step. It returns version-specific docs based on installed packages automatically.
+- Pass a `packages` array to scope results when you know which packages are relevant.
+- Use multiple broad, topic-based queries: `['rate limiting', 'routing rate limiting', 'routing']`. Expect the most relevant results first.
+- Do not add package names to queries because package info is already shared. Use `test resource table`, not `filament 4 test resource table`.
 
-- Whenever you share a project URL with the user, you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain/IP, and port.
+### Search Syntax
 
-## Debugging
+1. Use words for auto-stemmed AND logic: `rate limit` matches both "rate" AND "limit".
+2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
+3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
+4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
 
-- Use the `database-query` tool when you only need to read from the database.
-- Use the `database-schema` tool to inspect table structure before writing migrations or models.
-- To execute PHP code for debugging, run `vendor/bin/sail artisan tinker --execute "your code here"` directly.
-- To read configuration values, read the config files directly or run `vendor/bin/sail artisan config:show [key]`.
-- To inspect routes, run `vendor/bin/sail artisan route:list` directly.
+## Artisan
+
+- Run Artisan commands directly via the command line (e.g., `vendor/bin/sail artisan route:list`). Use `vendor/bin/sail artisan list` to discover available commands and `vendor/bin/sail artisan [command] --help` to check parameters.
+- Inspect routes with `vendor/bin/sail artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
+- Read configuration values using dot notation: `vendor/bin/sail artisan config:show app.name`, `vendor/bin/sail artisan config:show database.default`. Or read config files directly from the `config/` directory.
 - To check environment variables, read the `.env` file directly.
 
-## Reading Browser Logs With the `browser-logs` Tool
+## Tinker
 
-- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
-- Only recent browser logs will be useful - ignore old logs.
-
-## Searching Documentation (Critically Important)
-
-- Boost comes with a powerful `search-docs` tool you should use before trying other approaches when working with Laravel or Laravel ecosystem packages. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
-- Search the documentation before making code changes to ensure we are taking the correct approach.
-- Use multiple, broad, simple, topic-based queries at once. For example: `['rate limiting', 'routing rate limiting', 'routing']`. The most relevant results will be returned first.
-- Do not add package names to queries; package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
-
-### Available Search Syntax
-
-1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'.
-2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit".
-3. Quoted Phrases (Exact Position) - query="infinite scroll" - words must be adjacent and in that order.
-4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit".
-5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms.
+- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
+- Always use single quotes to prevent shell expansion: `vendor/bin/sail artisan tinker --execute 'Your::code();'`
+  - Double quotes for PHP strings inside: `vendor/bin/sail artisan tinker --execute 'User::where("active", true)->count();'`
 
 === php rules ===
 
 # PHP
 
 - Always use curly braces for control structures, even for single-line bodies.
+- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
+- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
+- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
+- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
+- Use array shape type definitions in PHPDoc blocks.
 
-## Constructors
+=== deployments rules ===
 
-- Use PHP 8 constructor property promotion in `__construct()`.
-    - `public function __construct(public GitHub $github) { }`
-- Do not allow empty `__construct()` methods with zero parameters unless the constructor is private.
+# Deployment
 
-## Type Declarations
-
-- Always use explicit return type declarations for methods and functions.
-- Use appropriate PHP type hints for method parameters.
-
-<!-- Explicit Return Types and Method Params -->
-```php
-protected function isAccessible(User $user, ?string $path = null): bool
-{
-    ...
-}
-```
-
-## Enums
-
-- Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
-
-## Comments
-
-- Prefer PHPDoc blocks over inline comments. Never use comments within the code itself unless the logic is exceptionally complex.
-
-## PHPDoc Blocks
-
-- Add useful array shape type definitions when appropriate.
+- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
 
 === sail rules ===
 
@@ -708,11 +638,19 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
-# Inertia v2
+# Inertia v3
 
-- Use all Inertia features from v1 and v2. Check the documentation before making changes to ensure the correct approach.
-- New features: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
+- Use all Inertia features from v1, v2, and v3. Check the documentation before making changes to ensure the correct approach.
+- New v3 features: standalone HTTP requests (`useHttp` hook), optimistic updates with automatic rollback, layout props (`useLayoutProps` hook), instant visits, simplified SSR via `@inertiajs/vite` plugin, custom exception handling for error pages.
+- Carried over from v2: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
 - When using deferred props, add an empty state with a pulsing or animated skeleton.
+- Axios has been removed. Use the built-in XHR client with interceptors, or install Axios separately if needed.
+- `Inertia::lazy()` / `LazyProp` has been removed. Use `Inertia::optional()` instead.
+- Prop types (`Inertia::optional()`, `Inertia::defer()`, `Inertia::merge()`) work inside nested arrays with dot-notation paths.
+- SSR works automatically in Vite dev mode with `@inertiajs/vite` - no separate Node.js server needed during development.
+- Event renames: `invalid` is now `httpException`, `exception` is now `networkError`.
+- `router.cancel()` replaced by `router.cancelAll()`.
+- The `future` configuration namespace has been removed - all v2 future options are now always enabled.
 
 === laravel/core rules ===
 
@@ -722,42 +660,17 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - If you're creating a generic PHP class, use `vendor/bin/sail artisan make:class`.
 - Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
 
-## Database
-
-- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
-- Use Eloquent models and relationships before suggesting raw database queries.
-- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
-- Generate code that prevents N+1 query problems by using eager loading.
-- Use Laravel's query builder for very complex database operations.
-
 ### Model Creation
 
 - When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `vendor/bin/sail artisan make:model --help` to check the available options.
 
-### APIs & Eloquent Resources
+## APIs & Eloquent Resources
 
 - For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
-## Controllers & Validation
-
-- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
-- Check sibling Form Requests to see if the application uses array or string based validation rules.
-
-## Authentication & Authorization
-
-- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
 
 ## URL Generation
 
 - When generating links to other pages, prefer named routes and the `route()` function.
-
-## Queues
-
-- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
-
-## Configuration
-
-- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
 
 ## Testing
 
@@ -791,13 +704,7 @@ $this->app->singleton(Service::class, fn () => new Service(fn () => request()));
 
 # Laravel Wayfinder
 
-Wayfinder generates TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
-
-- IMPORTANT: Activate `wayfinder-development` skill whenever referencing backend routes in frontend components.
-- Invokable Controllers: `import StorePost from '@/actions/.../StorePostController'; StorePost()`.
-- Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
-- Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
-- Inertia: Use `.form()` with `<Form>` component or `form.submit(store())` with useForm.
+Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
 
 === pint/core rules ===
 
@@ -820,14 +727,6 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 
 Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
-
-=== laravel/fortify rules ===
-
-# Laravel Fortify
-
-- Fortify is a headless authentication backend that provides authentication routes and controllers for Laravel applications.
-- IMPORTANT: Always use the `search-docs` tool for detailed Laravel Fortify patterns and documentation.
-- IMPORTANT: Activate `developing-with-fortify` skill when working with Fortify authentication features.
 
 === spatie/laravel-medialibrary rules ===
 
