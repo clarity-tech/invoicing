@@ -11,7 +11,10 @@ defineProps<{
 <template>
     <div class="min-h-screen bg-gray-100">
         <Head :title="title" />
-        <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white focus:rounded-md focus:m-2">
+        <a
+            href="#main-content"
+            class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white"
+        >
             Skip to content
         </a>
         <NavigationMenu />

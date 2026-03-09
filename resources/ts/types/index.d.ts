@@ -1,10 +1,38 @@
-export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AUD' | 'CAD' | 'SGD' | 'JPY' | 'AED';
+export type Currency =
+    | 'INR'
+    | 'USD'
+    | 'EUR'
+    | 'GBP'
+    | 'AUD'
+    | 'CAD'
+    | 'SGD'
+    | 'JPY'
+    | 'AED';
 
-export type InvoiceStatus = 'draft' | 'sent' | 'accepted' | 'partially_paid' | 'paid' | 'void';
+export type InvoiceStatus =
+    | 'draft'
+    | 'sent'
+    | 'accepted'
+    | 'partially_paid'
+    | 'paid'
+    | 'void';
 
-export type Country = 'IN' | 'GB' | 'US' | 'AE' | 'AU' | 'CA' | 'SG' | 'JP' | 'DE';
+export type Country =
+    | 'IN'
+    | 'GB'
+    | 'US'
+    | 'AE'
+    | 'AU'
+    | 'CA'
+    | 'SG'
+    | 'JP'
+    | 'DE';
 
-export type FinancialYearType = 'april_march' | 'january_december' | 'july_june' | 'october_september';
+export type FinancialYearType =
+    | 'april_march'
+    | 'january_december'
+    | 'july_june'
+    | 'october_september';
 
 export type ResetFrequency = 'never' | 'yearly' | 'monthly' | 'financial_year';
 
@@ -198,8 +226,14 @@ export interface InvoiceNumberingSeries {
 /** Shared page props from HandleInertiaRequests */
 export interface SharedProps {
     auth: {
-        user: Pick<User, 'id' | 'name' | 'email' | 'profile_photo_url' | 'two_factor_enabled'> | null;
-        currentTeam: Pick<Organization, 'id' | 'name' | 'company_name' | 'currency' | 'personal_team'> | null;
+        user: Pick<
+            User,
+            'id' | 'name' | 'email' | 'profile_photo_url' | 'two_factor_enabled'
+        > | null;
+        currentTeam: Pick<
+            Organization,
+            'id' | 'name' | 'company_name' | 'currency' | 'personal_team'
+        > | null;
     };
     flash: {
         success: string | null;
@@ -209,5 +243,6 @@ export interface SharedProps {
 }
 
 declare module '@inertiajs/vue3' {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface PageProps extends SharedProps {}
 }

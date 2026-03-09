@@ -1,4 +1,5 @@
-import { computed, type Ref } from 'vue';
+import { computed } from 'vue';
+import type { Ref } from 'vue';
 
 export interface LineItem {
     description: string;
@@ -27,6 +28,7 @@ export function calcLineTotal(item: LineItem): number {
  */
 export function calcLineTax(item: LineItem): number {
     const lineTotal = calcLineTotal(item);
+
     return Math.round((lineTotal * item.tax_rate) / 10000);
 }
 
