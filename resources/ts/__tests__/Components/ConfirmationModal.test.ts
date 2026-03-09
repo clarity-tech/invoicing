@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { describe, it, expect } from 'vitest';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 
 describe('ConfirmationModal', () => {
@@ -18,7 +18,11 @@ describe('ConfirmationModal', () => {
 
     it('displays custom title and message', () => {
         const wrapper = mount(ConfirmationModal, {
-            props: { show: true, title: 'Delete?', message: 'This cannot be undone.' },
+            props: {
+                show: true,
+                title: 'Delete?',
+                message: 'This cannot be undone.',
+            },
             global: { stubs: { Teleport: true } },
         });
         expect(wrapper.text()).toContain('Delete?');

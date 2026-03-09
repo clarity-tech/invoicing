@@ -19,18 +19,28 @@ function submit(): void {
         <Head title="Confirm Password" />
 
         <div class="mb-4 text-sm text-gray-600">
-            This is a secure area of the application. Please confirm your password before continuing.
+            This is a secure area of the application. Please confirm your
+            password before continuing.
         </div>
 
-        <div v-if="Object.keys(form.errors).length" class="mb-4 text-sm text-red-600">
+        <div
+            v-if="Object.keys(form.errors).length"
+            class="mb-4 text-sm text-red-600"
+        >
             <ul>
-                <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
+                <li v-for="(error, key) in form.errors" :key="key">
+                    {{ error }}
+                </li>
             </ul>
         </div>
 
         <form @submit.prevent="submit">
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <label
+                    for="password"
+                    class="block text-sm font-medium text-gray-700"
+                    >Password</label
+                >
                 <input
                     id="password"
                     v-model="form.password"
@@ -45,7 +55,7 @@ function submit(): void {
             <div class="mt-4 flex justify-end">
                 <button
                     type="submit"
-                    class="ms-4 inline-flex items-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50"
+                    class="ms-4 inline-flex items-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase transition hover:bg-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
                     :disabled="form.processing"
                 >
                     Confirm

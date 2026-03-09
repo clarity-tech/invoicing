@@ -1,13 +1,14 @@
 import '../css/app.css';
 
-import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { createApp, h } from 'vue';
+import type { DefineComponent } from 'vue';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Invoicing';
+const appName = import.meta.env.VITE_APP_NAME || 'InvoiceInk';
 
 createInertiaApp({
-    title: (title) => title ? `${title} - ${appName}` : appName,
+    title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,

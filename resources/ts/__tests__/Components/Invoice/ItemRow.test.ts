@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { describe, it, expect } from 'vitest';
 import ItemRow from '@/Components/Invoice/ItemRow.vue';
 
 const defaultProps = {
@@ -32,17 +32,25 @@ describe('ItemRow', () => {
 
     it('shows remove button when canRemove is true', () => {
         const wrapper = mount(ItemRow, { props: defaultProps });
-        expect(wrapper.find('button[aria-label="Remove item 1"]').exists()).toBe(true);
+        expect(
+            wrapper.find('button[aria-label="Remove item 1"]').exists(),
+        ).toBe(true);
     });
 
     it('hides remove button when canRemove is false', () => {
-        const wrapper = mount(ItemRow, { props: { ...defaultProps, canRemove: false } });
-        expect(wrapper.find('button[aria-label="Remove item 1"]').exists()).toBe(false);
+        const wrapper = mount(ItemRow, {
+            props: { ...defaultProps, canRemove: false },
+        });
+        expect(
+            wrapper.find('button[aria-label="Remove item 1"]').exists(),
+        ).toBe(false);
     });
 
     it('emits remove when remove button clicked', async () => {
         const wrapper = mount(ItemRow, { props: defaultProps });
-        await wrapper.find('button[aria-label="Remove item 1"]').trigger('click');
+        await wrapper
+            .find('button[aria-label="Remove item 1"]')
+            .trigger('click');
         expect(wrapper.emitted('remove')).toHaveLength(1);
     });
 
@@ -52,19 +60,27 @@ describe('ItemRow', () => {
         await input.setValue('New description');
         expect(wrapper.emitted('update')).toBeTruthy();
         const emitted = wrapper.emitted('update')!;
-        expect((emitted[emitted.length - 1][0] as any).description).toBe('New description');
+        expect((emitted[emitted.length - 1][0] as any).description).toBe(
+            'New description',
+        );
     });
 
     it('displays validation errors', () => {
         const wrapper = mount(ItemRow, {
-            props: { ...defaultProps, errors: { 'items.0.description': 'Required' } },
+            props: {
+                ...defaultProps,
+                errors: { 'items.0.description': 'Required' },
+            },
         });
         expect(wrapper.text()).toContain('Required');
     });
 
     it('shows SAC code badge when provided', () => {
         const wrapper = mount(ItemRow, {
-            props: { ...defaultProps, item: { ...defaultProps.item, sac_code: '998311' } },
+            props: {
+                ...defaultProps,
+                item: { ...defaultProps.item, sac_code: '998311' },
+            },
         });
         expect(wrapper.text()).toContain('SAC: 998311');
     });

@@ -1,48 +1,52 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
+import {
+    queryParams,
+    type RouteQueryOptions,
+    type RouteDefinition,
+} from './../../../../wayfinder';
 /**
-* @see \App\Http\Controllers\PrivacyPolicyController::show
-* @see app/Http/Controllers/PrivacyPolicyController.php:11
-* @route '/privacy-policy'
-*/
+ * @see \App\Http\Controllers\PrivacyPolicyController::show
+ * @see app/Http/Controllers/PrivacyPolicyController.php:11
+ * @route '/privacy-policy'
+ */
 export const show = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(options),
     method: 'get',
-})
+});
 
 show.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/privacy-policy',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\PrivacyPolicyController::show
-* @see app/Http/Controllers/PrivacyPolicyController.php:11
-* @route '/privacy-policy'
-*/
+ * @see \App\Http\Controllers\PrivacyPolicyController::show
+ * @see app/Http/Controllers/PrivacyPolicyController.php:11
+ * @route '/privacy-policy'
+ */
 show.url = (options?: RouteQueryOptions) => {
-    return show.definition.url + queryParams(options)
-}
+    return show.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\PrivacyPolicyController::show
-* @see app/Http/Controllers/PrivacyPolicyController.php:11
-* @route '/privacy-policy'
-*/
+ * @see \App\Http\Controllers\PrivacyPolicyController::show
+ * @see app/Http/Controllers/PrivacyPolicyController.php:11
+ * @route '/privacy-policy'
+ */
 show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(options),
     method: 'get',
-})
+});
 
 /**
-* @see \App\Http\Controllers\PrivacyPolicyController::show
-* @see app/Http/Controllers/PrivacyPolicyController.php:11
-* @route '/privacy-policy'
-*/
+ * @see \App\Http\Controllers\PrivacyPolicyController::show
+ * @see app/Http/Controllers/PrivacyPolicyController.php:11
+ * @route '/privacy-policy'
+ */
 show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(options),
     method: 'head',
-})
+});
 
-const PrivacyPolicyController = { show }
+const PrivacyPolicyController = { show };
 
-export default PrivacyPolicyController
+export default PrivacyPolicyController;
