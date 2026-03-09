@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useForm, Head } from '@inertiajs/vue3';
+import { ref, nextTick } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { store as twoFactorLogin } from '@/routes/two-factor/login';
-import { ref, nextTick } from 'vue';
 
 const recovery = ref(false);
 const codeInput = ref<HTMLInputElement | null>(null);
@@ -37,22 +37,33 @@ function submit(): void {
 
         <div class="mb-4 text-sm text-gray-600">
             <template v-if="!recovery">
-                Please confirm access to your account by entering the authentication code provided by your authenticator application.
+                Please confirm access to your account by entering the
+                authentication code provided by your authenticator application.
             </template>
             <template v-else>
-                Please confirm access to your account by entering one of your emergency recovery codes.
+                Please confirm access to your account by entering one of your
+                emergency recovery codes.
             </template>
         </div>
 
-        <div v-if="Object.keys(form.errors).length" class="mb-4 text-sm text-red-600">
+        <div
+            v-if="Object.keys(form.errors).length"
+            class="mb-4 text-sm text-red-600"
+        >
             <ul>
-                <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
+                <li v-for="(error, key) in form.errors" :key="key">
+                    {{ error }}
+                </li>
             </ul>
         </div>
 
         <form @submit.prevent="submit">
             <div v-if="!recovery" class="mt-4">
-                <label for="code" class="block text-sm font-medium text-gray-700">Code</label>
+                <label
+                    for="code"
+                    class="block text-sm font-medium text-gray-700"
+                    >Code</label
+                >
                 <input
                     id="code"
                     ref="codeInput"
@@ -66,7 +77,11 @@ function submit(): void {
             </div>
 
             <div v-else class="mt-4">
-                <label for="recovery_code" class="block text-sm font-medium text-gray-700">Recovery Code</label>
+                <label
+                    for="recovery_code"
+                    class="block text-sm font-medium text-gray-700"
+                    >Recovery Code</label
+                >
                 <input
                     id="recovery_code"
                     ref="recoveryCodeInput"
@@ -89,7 +104,7 @@ function submit(): void {
 
                 <button
                     type="submit"
-                    class="ms-4 inline-flex items-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50"
+                    class="ms-4 inline-flex items-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase transition hover:bg-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
                     :disabled="form.processing"
                 >
                     Log in
