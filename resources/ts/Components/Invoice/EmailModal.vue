@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
+import TipTapEditor from '@/Components/TipTapEditor.vue';
 import type { Invoice, Customer } from '@/types';
 
 const props = defineProps<{
@@ -18,7 +19,8 @@ const auth = computed(() => (page.props as any).auth);
 
 const customer = computed(
     () =>
-        props.customers.find((c) => c.id === props.invoice.customer_id) ?? null,
+        props.customers.find((c) => c.id === props.invoice.customer_id) ??
+        null,
 );
 
 const customerEmails = computed(
@@ -26,8 +28,23 @@ const customerEmails = computed(
 );
 
 const orgEmails = computed(
-    () => auth.value?.currentTeam?.emails?.map((c: any) => c.email) ?? [],
+    () =>
+        auth.value?.currentTeam?.emails?.map((c: any) => c.email) ?? [],
 );
+
+const templateTypes = computed(() => {
+    const docType = props.invoice.type === 'estimate' ? 'estimate' : 'invoice';
+
+    return {
+        [`${docType}_initial`]: docType === 'invoice' ? 'Initial Invoice' : 'Initial Estimate',
+        [`${docType}_reminder`]: 'Reminder',
+        [`${docType}_overdue`]: docType === 'invoice' ? 'Overdue Notice' : 'Expired Notice',
+        [`${docType}_thank_you`]: 'Thank You',
+    };
+});
+
+const selectedTemplateType = ref('');
+const loadingTemplate = ref(false);
 
 const form = useForm({
     recipients: [] as string[],
@@ -40,29 +57,56 @@ const form = useForm({
 const newToEmail = ref('');
 const newCcEmail = ref('');
 
+async function loadTemplate(templateType: string) {
+    loadingTemplate.value = true;
+
+    try {
+        const response = await fetch(
+            `/api/email-templates/resolve?template_type=${templateType}&invoice_id=${props.invoice.id}`,
+            {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            },
+        );
+
+        if (response.ok) {
+            const data = await response.json();
+            form.subject = data.subject;
+            form.body = data.body;
+        }
+    } finally {
+        loadingTemplate.value = false;
+    }
+}
+
 // Initialize form when modal opens
 watch(
     () => props.show,
     (isOpen) => {
         if (isOpen) {
-            const orgName =
-                auth.value?.currentTeam?.company_name ??
-                auth.value?.currentTeam?.name ??
-                'Your Company';
-            const docType =
-                props.invoice.type === 'invoice' ? 'Invoice' : 'Estimate';
+            const docType = props.invoice.type === 'estimate' ? 'estimate' : 'invoice';
+            selectedTemplateType.value = `${docType}_initial`;
 
             form.recipients = [...customerEmails.value];
             form.cc = [...orgEmails.value];
-            form.subject = `${docType} - ${props.invoice.invoice_number} from ${orgName}`;
-            form.body = `<p><strong>${docType} #${props.invoice.invoice_number}</strong></p><p>Dear ${customer.value?.name ?? 'Customer'},</p><p>Thank you for your business. Your ${docType.toLowerCase()} can be viewed, printed and downloaded as PDF from the link below.</p>`;
             form.attach_pdf = true;
             form.clearErrors();
             newToEmail.value = '';
             newCcEmail.value = '';
+
+            loadTemplate(selectedTemplateType.value);
         }
     },
 );
+
+// Reload template when type changes
+watch(selectedTemplateType, (newType) => {
+    if (newType && props.show) {
+        loadTemplate(newType);
+    }
+});
 
 function addToRecipient() {
     const email = newToEmail.value.trim();
@@ -141,6 +185,43 @@ function send() {
 
             <!-- Body -->
             <div class="flex-1 overflow-y-auto px-6 py-4">
+                <!-- Template Type Selector -->
+                <div class="mb-4">
+                    <div class="flex items-center">
+                        <label
+                            class="w-20 text-sm font-medium text-gray-600"
+                            >Template</label
+                        >
+                        <div class="flex flex-1 items-center gap-2">
+                            <select
+                                v-model="selectedTemplateType"
+                                class="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                            >
+                                <option
+                                    v-for="(label, value) in templateTypes"
+                                    :key="value"
+                                    :value="value"
+                                >
+                                    {{ label }}
+                                </option>
+                            </select>
+                            <span
+                                v-if="loadingTemplate"
+                                class="text-xs text-gray-400"
+                                >Loading...</span
+                            >
+                            <a
+                                href="/email-templates"
+                                target="_blank"
+                                class="text-xs text-brand-600 hover:text-brand-800"
+                                title="Customize templates"
+                            >
+                                Customize
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- To -->
                 <div class="mb-4">
                     <div class="flex items-start">
@@ -265,13 +346,11 @@ function send() {
                     </p>
                 </div>
 
-                <!-- Body -->
+                <!-- Body (TipTap) -->
                 <div class="mb-4">
-                    <textarea
+                    <TipTapEditor
                         v-model="form.body"
-                        rows="10"
-                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                        placeholder="Email body..."
+                        placeholder="Compose your email..."
                     />
                     <p
                         v-if="form.errors.body"
@@ -299,7 +378,12 @@ function send() {
                                 {{ invoice.invoice_number }}.pdf
                             </div>
                             <div class="text-xs text-gray-500">
-                                Invoice PDF document
+                                {{
+                                    invoice.type === 'estimate'
+                                        ? 'Estimate'
+                                        : 'Invoice'
+                                }}
+                                PDF document
                             </div>
                         </div>
                     </label>
