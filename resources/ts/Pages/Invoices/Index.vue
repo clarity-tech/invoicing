@@ -66,13 +66,26 @@ function deleteInvoice() {
         return;
     }
 
-    router.delete(`/invoices/${invoiceToDelete.value.id}`, {
-        preserveScroll: true,
-        onSuccess: () => {
-            confirmingDelete.value = false;
-            invoiceToDelete.value = null;
-        },
-    });
+    const id = invoiceToDelete.value.id;
+
+    confirmingDelete.value = false;
+    invoiceToDelete.value = null;
+
+    // Optimistic: remove from list immediately, auto-reverts on failure
+    router
+        .optimistic((page) => {
+            const invoices = (page.props as any).invoices;
+
+            if (invoices?.data) {
+                invoices.data = invoices.data.filter(
+                    (i: Invoice) => i.id !== id,
+                );
+                invoices.total = Math.max(0, invoices.total - 1);
+            }
+        })
+        .delete(`/invoices/${id}`, {
+            preserveScroll: true,
+        });
 }
 
 function duplicateInvoice(invoice: Invoice) {
