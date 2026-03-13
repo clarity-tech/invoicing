@@ -17,6 +17,22 @@ defineProps<{
 <template>
     <AppLayout title="Email Templates">
         <div class="mx-auto max-w-5xl py-6 sm:px-6 lg:px-8">
+            <!-- Settings sub-nav -->
+            <div class="mb-6 flex gap-4 border-b border-gray-200 pb-3">
+                <Link
+                    href="/numbering-series"
+                    class="text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                    Numbering Series
+                </Link>
+                <Link
+                    href="/email-templates"
+                    class="border-b-2 border-brand-500 text-sm font-medium text-brand-600"
+                >
+                    Email Templates
+                </Link>
+            </div>
+
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">
