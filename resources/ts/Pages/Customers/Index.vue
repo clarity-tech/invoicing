@@ -111,17 +111,31 @@ function deleteCustomer() {
         return;
     }
 
+    const id = customerToDelete.value.id;
+
+    confirmingDelete.value = false;
+    customerToDelete.value = null;
     deleting.value = true;
-    router.delete(`/customers/${customerToDelete.value.id}`, {
-        preserveScroll: true,
-        onSuccess: () => {
-            confirmingDelete.value = false;
-            customerToDelete.value = null;
-        },
-        onFinish: () => {
-            deleting.value = false;
-        },
-    });
+
+    // Optimistic: remove from list immediately, auto-reverts on failure
+    router
+        .optimistic((page) => {
+            const customers = (page.props as any).customers;
+
+            if (Array.isArray(customers)) {
+                const idx = customers.findIndex((c: any) => c.id === id);
+
+                if (idx !== -1) {
+                    customers.splice(idx, 1);
+                }
+            }
+        })
+        .delete(`/customers/${id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                deleting.value = false;
+            },
+        });
 }
 
 // Location modal state
