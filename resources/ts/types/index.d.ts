@@ -154,6 +154,20 @@ export interface Invoice {
     remaining_balance?: number;
     formatted_remaining_balance?: string;
     payment_percentage?: number;
+    payments?: Payment[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Payment {
+    id: number;
+    invoice_id: number;
+    amount: number;
+    currency: Currency;
+    payment_date: string;
+    payment_method: string | null;
+    reference: string | null;
+    notes: string | null;
     created_at: string;
     updated_at: string;
 }
