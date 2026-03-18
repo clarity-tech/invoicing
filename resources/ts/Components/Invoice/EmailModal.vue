@@ -64,6 +64,7 @@ async function loadTemplate(templateType: string) {
         const response = await fetch(
             `/api/email-templates/resolve?template_type=${templateType}&invoice_id=${props.invoice.id}`,
             {
+                credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',

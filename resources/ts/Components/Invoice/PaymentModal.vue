@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
+import { formatMoney } from '@/composables/useFormatMoney';
 import type { Invoice } from '@/types';
 
 const props = defineProps<{
@@ -48,11 +49,8 @@ function submit() {
     });
 }
 
-function formatCurrency(amount: number): string {
-    return (amount / 100).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+function fmt(amount: number): string {
+    return formatMoney(amount, props.invoice.currency);
 }
 </script>
 
@@ -104,13 +102,13 @@ function formatCurrency(amount: number): string {
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500">Total</span>
                     <span class="font-medium">{{
-                        formatCurrency(invoice.total ?? 0)
+                        fmt(invoice.total ?? 0)
                     }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-500">Paid</span>
                     <span class="font-medium text-green-600">{{
-                        formatCurrency(invoice.amount_paid ?? 0)
+                        fmt(invoice.amount_paid ?? 0)
                     }}</span>
                 </div>
                 <div
@@ -118,7 +116,7 @@ function formatCurrency(amount: number): string {
                 >
                     <span>Balance Due</span>
                     <span class="text-brand-600">{{
-                        formatCurrency(balanceDue)
+                        fmt(balanceDue)
                     }}</span>
                 </div>
             </div>
