@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue';
-import { useForm, router, usePage } from '@inertiajs/vue3';
+import { Link, useForm, router, usePage } from '@inertiajs/vue3';
 import ItemRow from './ItemRow.vue';
 import EmailModal from './EmailModal.vue';
 import { useInvoiceCalculator, type LineItem } from '@/composables/useInvoiceCalculator';
@@ -193,9 +193,9 @@ const flash = computed(() => (page.props as any).flash ?? {});
         <!-- Header -->
         <div class="mb-6 flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <a href="/invoices" class="text-brand-600 hover:text-brand-900">
+                <Link href="/invoices" class="text-brand-600 hover:text-brand-900">
                     &larr; Back to Invoices
-                </a>
+                </Link>
                 <h1 class="text-3xl font-bold text-gray-900">{{ pageTitle }}</h1>
             </div>
             <div v-if="mode === 'edit' && invoice?.ulid" class="flex space-x-2">
