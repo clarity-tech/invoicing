@@ -12,7 +12,7 @@ const page = usePage();
 const showMobileMenu = ref(false);
 const showUserDropdown = ref(false);
 
-const auth = page.props.auth as {
+const auth = (page.props.auth ?? {}) as {
     user: { id: number; name: string; email: string; profile_photo_url: string } | null;
     currentTeam: { id: number; name: string; company_name: string | null } | null;
 };
