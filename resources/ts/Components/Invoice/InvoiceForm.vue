@@ -28,6 +28,14 @@ const props = defineProps<{
 
 const { formatMoney } = useFormatMoney();
 const showEmailModal = ref(false);
+const downloadingPdf = ref(false);
+
+// Reset PDF loading state after download starts
+watch(downloadingPdf, (val) => {
+    if (val) {
+        setTimeout(() => { downloadingPdf.value = false; }, 5000);
+    }
+});
 
 // Build initial items
 function buildInitialItems(): LineItem[] {
@@ -202,9 +210,11 @@ const flash = computed(() => (page.props as any).flash ?? {});
                 </a>
                 <a
                     :href="`/${invoice.type === 'invoice' ? 'invoices' : 'estimates'}/${invoice.ulid}/pdf`"
-                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded inline-flex items-center gap-2"
+                    @click="downloadingPdf = true"
                 >
-                    Download PDF
+                    <svg v-if="downloadingPdf" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    {{ downloadingPdf ? 'Generating...' : 'Download PDF' }}
                 </a>
             </div>
         </div>
@@ -415,8 +425,8 @@ const flash = computed(() => (page.props as any).flash ?? {});
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description *</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Qty *</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Rate (cents)</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Tax (bps)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Unit Price</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Tax Rate</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Amount</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Action</th>
                             </tr>

@@ -78,11 +78,15 @@ function confirmDelete(customer: Customer) {
     confirmingDelete.value = true;
 }
 
+const deleting = ref(false);
+
 function deleteCustomer() {
     if (!customerToDelete.value) return;
+    deleting.value = true;
     router.delete(`/customers/${customerToDelete.value.id}`, {
         preserveScroll: true,
         onSuccess: () => { confirmingDelete.value = false; customerToDelete.value = null; },
+        onFinish: () => { deleting.value = false; },
     });
 }
 

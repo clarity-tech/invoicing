@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { type InertiaForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import type { Contact, Currency, Country } from '@/types';
 
 const props = defineProps<{
@@ -18,6 +19,37 @@ const emit = defineEmits<{
     (e: 'submit'): void;
     (e: 'cancel'): void;
 }>();
+
+const contactErrors = ref<Record<string, string>>({});
+const nameError = ref('');
+
+function validateEmail(email: string, index: number) {
+    const key = `contact_${index}_email`;
+    if (!email) {
+        delete contactErrors.value[key];
+        return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        contactErrors.value[key] = 'Please enter a valid email address';
+    } else {
+        delete contactErrors.value[key];
+    }
+}
+
+function validateName(index: number) {
+    const key = `contact_${index}_name`;
+    const contact = props.form.contacts[index];
+    if (contact.email && !contact.name) {
+        contactErrors.value[key] = 'Name is required when email is provided';
+    } else {
+        delete contactErrors.value[key];
+    }
+}
+
+function validateCustomerName() {
+    nameError.value = props.form.name.trim() ? '' : 'Customer name is required';
+}
 
 function addContact() {
     props.form.contacts.push({ name: '', email: '' });
@@ -39,8 +71,11 @@ function removeContact(index: number) {
                 id="customer-name"
                 v-model="form.name"
                 type="text"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                :class="nameError ? 'border-red-300' : 'border-gray-300'"
+                @blur="validateCustomerName"
             >
+            <p v-if="nameError" class="mt-1 text-sm text-red-600">{{ nameError }}</p>
             <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
         </div>
 
@@ -90,16 +125,22 @@ function removeContact(index: number) {
                         v-model="contact.name"
                         type="text"
                         placeholder="Contact name"
-                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                        class="block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                        :class="contactErrors[`contact_${index}_name`] ? 'border-red-300' : 'border-gray-300'"
+                        @blur="validateName(index)"
                     >
+                    <p v-if="contactErrors[`contact_${index}_name`]" class="mt-1 text-xs text-red-600">{{ contactErrors[`contact_${index}_name`] }}</p>
                 </div>
                 <div class="flex-1">
                     <input
                         v-model="contact.email"
                         type="email"
                         placeholder="Email *"
-                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                        class="block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+                        :class="contactErrors[`contact_${index}_email`] ? 'border-red-300' : 'border-gray-300'"
+                        @blur="validateEmail(contact.email, index)"
                     >
+                    <p v-if="contactErrors[`contact_${index}_email`]" class="mt-1 text-xs text-red-600">{{ contactErrors[`contact_${index}_email`] }}</p>
                     <p v-if="(form.errors as any)[`contacts.${index}.email`]" class="mt-1 text-sm text-red-600">
                         {{ (form.errors as any)[`contacts.${index}.email`] }}
                     </p>
@@ -129,7 +170,7 @@ function removeContact(index: number) {
                 class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
                 :disabled="form.processing"
             >
-                {{ isEditing ? 'Update Customer' : 'Create Customer' }}
+                {{ form.processing ? 'Saving...' : (isEditing ? 'Update Customer' : 'Create Customer') }}
             </button>
         </div>
     </form>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useForm, Link, Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { store as registerStore } from '@/routes/register';
 import { login } from '@/routes';
@@ -10,6 +11,11 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     terms: false,
+});
+
+const passwordMismatch = computed(() => {
+    if (!form.password_confirmation) return false;
+    return form.password !== form.password_confirmation;
 });
 
 function submit(): void {
@@ -65,6 +71,7 @@ function submit(): void {
                     required
                     autocomplete="new-password"
                 />
+                <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
             </div>
 
             <div class="mt-4">
@@ -77,6 +84,7 @@ function submit(): void {
                     required
                     autocomplete="new-password"
                 />
+                <p v-if="passwordMismatch" class="mt-1 text-xs text-red-600">Passwords do not match</p>
             </div>
 
             <div class="mt-4">

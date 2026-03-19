@@ -2,29 +2,33 @@
 
 ## Target: Small business users in India (and UAE/international)
 
-### Phase 1: Quick Wins (Input Clarity + Date Standardization)
-- [ ] Replace "Rate (cents)" with proper currency-labeled input (e.g., "Rate (₹)")
-- [ ] Replace "Tax (bps)" with "Tax (%)" and convert basis points to percentage in UI
-- [ ] Add currency symbol prefix/suffix to price input fields
-- [ ] Add format hints for GSTIN (e.g., placeholder "29AAFCD9711R1ZV")
-- [ ] Add format hints for phone, SAC code fields
-- [ ] Standardize date formatting to `en-IN` locale (DD/MM/YYYY) across all Vue components
-- [ ] Fix date format inconsistency between Blade (DD/MM/YYYY) and Vue (en-US)
+### Phase 1: Quick Wins (Input Clarity + Date Standardization) ✅
+- [x] Replace "Rate (cents)" with "Unit Price" and "Tax (bps)" with "Tax Rate"
+- [x] Add currency symbol prefix to price input, % suffix to tax rate input
+- [x] Convert unit_price display (cents→rupees) and tax_rate display (bps→percentage)
+- [x] Add format hints for GSTIN (placeholder + hint text in LocationModal)
+- [x] Add format hints for SAC code ("6-digit code" hint in ItemRow)
+- [x] Standardize date formatting to `en-IN` locale across Vue components
+- [x] Created shared `useFormatDate` composable
 
-### Phase 2: Real-Time Validation
-- [ ] Add inline validation for email fields (on blur)
-- [ ] Add GSTIN format validation with helpful error message
-- [ ] Show password requirements on Register page before submission
-- [ ] Add validation feedback on blur for required fields in CustomerForm
-- [ ] Add validation feedback on blur for required fields in InvoiceForm
-- [ ] Add validation feedback in LocationModal/LocationFields
+### Phase 2: Real-Time Validation ✅
+- [x] Add inline email validation on blur in CustomerForm
+- [x] Add contact name validation (required when email provided)
+- [x] Add customer name required validation on blur
+- [x] Add GSTIN format validation with regex + auto-uppercase in LocationModal
+- [x] Show password requirements on Register page ("at least 8 characters")
+- [x] Add password mismatch detection on Register page
+- [x] Add required field validation on blur in LocationModal (name, address, city, state, country)
 
-### Phase 3: Loading States & Feedback
-- [ ] Standardize all submit buttons to show "Saving..." text when processing
+### Phase 3: Loading States & Feedback ✅
+- [x] CustomerForm submit button shows "Saving..." when processing
+- [x] LocationModal submit button shows "Saving..." when processing
+- [x] Invoice delete with loading state (`deleting` ref + `onFinish`)
+- [x] Customer delete with loading state
+- [x] Duplicate button shows "Duplicating..." and disables during operation
+- [x] Convert button shows "Converting..." and disables during operation
+- [x] PDF download button shows spinner + "Generating..." with 5s auto-reset
 - [ ] Add skeleton/loading states for Dashboard cards
-- [ ] Add loading spinner for PDF generation
-- [ ] Add success toast/flash for customer create/update/delete
-- [ ] Add success toast/flash for invoice create/update
 - [ ] Add success toast/flash for organization create/update
 
 ### Phase 4: Onboarding & Empty States
@@ -35,7 +39,7 @@
 - [ ] Add first-time user detection and onboarding hints
 
 ### Phase 5: Accessibility
-- [ ] Add `role="dialog"` and `aria-modal="true"` to EmailModal
+- [x] Add `role="dialog"` and `aria-modal="true"` to EmailModal (already had it)
 - [ ] Add skip-to-content link in AppLayout
 - [ ] Add focus trapping in all modals
 - [ ] Add focus management (auto-focus first input on modal open)

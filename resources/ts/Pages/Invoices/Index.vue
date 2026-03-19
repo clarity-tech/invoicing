@@ -54,20 +54,34 @@ function confirmDelete(invoice: Invoice) {
     confirmingDelete.value = true;
 }
 
+const deleting = ref(false);
+const duplicating = ref<number | null>(null);
+const converting = ref<number | null>(null);
+
 function deleteInvoice() {
     if (!invoiceToDelete.value) return;
+    deleting.value = true;
     router.delete(`/invoices/${invoiceToDelete.value.id}`, {
         preserveScroll: true,
         onSuccess: () => { confirmingDelete.value = false; invoiceToDelete.value = null; },
+        onFinish: () => { deleting.value = false; },
     });
 }
 
 function duplicateInvoice(invoice: Invoice) {
-    router.post(`/invoices/${invoice.id}/duplicate`, {}, { preserveScroll: true });
+    duplicating.value = invoice.id;
+    router.post(`/invoices/${invoice.id}/duplicate`, {}, {
+        preserveScroll: true,
+        onFinish: () => { duplicating.value = null; },
+    });
 }
 
 function convertEstimate(invoice: Invoice) {
-    router.post(`/invoices/${invoice.id}/convert`, {}, { preserveScroll: true });
+    converting.value = invoice.id;
+    router.post(`/invoices/${invoice.id}/convert`, {}, {
+        preserveScroll: true,
+        onFinish: () => { converting.value = null; },
+    });
 }
 
 function publicUrl(invoice: Invoice): string {
@@ -84,7 +98,7 @@ function pdfUrl(invoice: Invoice): string {
 
 function formatDate(dateStr: string | null): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const tabs = [
@@ -191,14 +205,15 @@ const tabs = [
                                     <a :href="publicUrl(invoice)" target="_blank" class="text-green-600 hover:text-green-900">View</a>
                                     <a :href="`/invoices/${invoice.id}/edit`" class="text-brand-600 hover:text-brand-900">Edit</a>
                                     <a :href="pdfUrl(invoice)" class="text-red-600 hover:text-red-900">PDF</a>
-                                    <button type="button" class="text-gray-600 hover:text-gray-900" @click="duplicateInvoice(invoice)">Duplicate</button>
+                                    <button type="button" class="text-gray-600 hover:text-gray-900 disabled:opacity-50" :disabled="duplicating === invoice.id" @click="duplicateInvoice(invoice)">{{ duplicating === invoice.id ? 'Duplicating...' : 'Duplicate' }}</button>
                                     <button
                                         v-if="invoice.type === 'estimate'"
                                         type="button"
-                                        class="text-purple-600 hover:text-purple-900"
+                                        class="text-purple-600 hover:text-purple-900 disabled:opacity-50"
+                                        :disabled="converting === invoice.id"
                                         @click="convertEstimate(invoice)"
                                     >
-                                        Convert
+                                        {{ converting === invoice.id ? 'Converting...' : 'Convert' }}
                                     </button>
                                     <button type="button" class="text-red-600 hover:text-red-900" @click="confirmDelete(invoice)">Delete</button>
                                 </div>
