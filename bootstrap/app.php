@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureOrganizationSetup;
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,9 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Register organization setup middleware
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
+        ]);
+
         $middleware->alias([
-            'organization.setup' => \App\Http\Middleware\EnsureOrganizationSetup::class,
+            'organization.setup' => EnsureOrganizationSetup::class,
         ]);
     })
     ->withMiddleware(function (Middleware $middleware) {
