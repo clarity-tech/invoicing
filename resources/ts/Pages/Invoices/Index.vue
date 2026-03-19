@@ -5,6 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import MoneyDisplay from '@/Components/MoneyDisplay.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import { formatDate } from '@/composables/useFormatDate';
 import type { Invoice, InvoiceStatus } from '@/types';
 
 interface PaginatedInvoices {
@@ -54,17 +55,14 @@ function confirmDelete(invoice: Invoice) {
     confirmingDelete.value = true;
 }
 
-const deleting = ref(false);
 const duplicating = ref<number | null>(null);
 const converting = ref<number | null>(null);
 
 function deleteInvoice() {
     if (!invoiceToDelete.value) return;
-    deleting.value = true;
     router.delete(`/invoices/${invoiceToDelete.value.id}`, {
         preserveScroll: true,
         onSuccess: () => { confirmingDelete.value = false; invoiceToDelete.value = null; },
-        onFinish: () => { deleting.value = false; },
     });
 }
 
@@ -94,11 +92,6 @@ function pdfUrl(invoice: Invoice): string {
     return invoice.type === 'invoice'
         ? `/invoices/${invoice.ulid}/pdf`
         : `/estimates/${invoice.ulid}/pdf`;
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const tabs = [

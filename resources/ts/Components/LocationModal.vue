@@ -25,20 +25,19 @@ const form = useForm({
     postal_code: '',
 });
 
-const gstinError = ref('');
 const fieldErrors = ref<Record<string, string>>({});
 
 function validateGstin() {
     const val = form.gstin.trim();
     if (!val) {
-        gstinError.value = '';
+        delete fieldErrors.value.gstin;
         return;
     }
     const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     if (!gstinRegex.test(val.toUpperCase())) {
-        gstinError.value = 'Invalid GSTIN format. Expected: 29AAFCD9711R1ZV (15 characters)';
+        fieldErrors.value.gstin = 'Invalid GSTIN format. Expected: 29AAFCD9711R1ZV (15 characters)';
     } else {
-        gstinError.value = '';
+        delete fieldErrors.value.gstin;
     }
 }
 
@@ -98,12 +97,12 @@ function submit() {
                                     <label class="block text-sm font-medium text-gray-700">Location Name *</label>
                                     <input v-model="form.name" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="fieldErrors.name ? 'border-red-300' : 'border-gray-300'" placeholder="e.g., Head Office" @blur="validateRequired('name', 'Location name')">
                                     <p v-if="fieldErrors.name" class="mt-1 text-sm text-red-600">{{ fieldErrors.name }}</p>
-                                    <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
+                                    <p v-else-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">GSTIN</label>
-                                    <input v-model="form.gstin" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="gstinError ? 'border-red-300' : 'border-gray-300'" placeholder="e.g., 29AAFCD9711R1ZV" maxlength="15" @blur="validateGstin" @input="form.gstin = ($event.target as HTMLInputElement).value.toUpperCase()">
-                                    <p v-if="gstinError" class="mt-1 text-sm text-red-600">{{ gstinError }}</p>
+                                    <input v-model="form.gstin" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="fieldErrors.gstin ? 'border-red-300' : 'border-gray-300'" placeholder="e.g., 29AAFCD9711R1ZV" maxlength="15" @blur="validateGstin" @input="form.gstin = ($event.target as HTMLInputElement).value.toUpperCase()">
+                                    <p v-if="fieldErrors.gstin" class="mt-1 text-sm text-red-600">{{ fieldErrors.gstin }}</p>
                                     <p v-else-if="form.errors.gstin" class="mt-1 text-sm text-red-600">{{ form.errors.gstin }}</p>
                                     <p v-else class="mt-1 text-xs text-gray-400">15-character alphanumeric (e.g., 29AAFCD9711R1ZV)</p>
                                 </div>
@@ -111,7 +110,7 @@ function submit() {
                                     <label class="block text-sm font-medium text-gray-700">Address Line 1 *</label>
                                     <input v-model="form.address_line_1" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="fieldErrors.address_line_1 ? 'border-red-300' : 'border-gray-300'" @blur="validateRequired('address_line_1', 'Address')">
                                     <p v-if="fieldErrors.address_line_1" class="mt-1 text-sm text-red-600">{{ fieldErrors.address_line_1 }}</p>
-                                    <p v-if="form.errors.address_line_1" class="mt-1 text-sm text-red-600">{{ form.errors.address_line_1 }}</p>
+                                    <p v-else-if="form.errors.address_line_1" class="mt-1 text-sm text-red-600">{{ form.errors.address_line_1 }}</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Address Line 2</label>
@@ -122,13 +121,13 @@ function submit() {
                                         <label class="block text-sm font-medium text-gray-700">City *</label>
                                         <input v-model="form.city" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="fieldErrors.city ? 'border-red-300' : 'border-gray-300'" @blur="validateRequired('city', 'City')">
                                         <p v-if="fieldErrors.city" class="mt-1 text-sm text-red-600">{{ fieldErrors.city }}</p>
-                                        <p v-if="form.errors.city" class="mt-1 text-sm text-red-600">{{ form.errors.city }}</p>
+                                        <p v-else-if="form.errors.city" class="mt-1 text-sm text-red-600">{{ form.errors.city }}</p>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">State *</label>
                                         <input v-model="form.state" type="text" class="mt-1 block w-full rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" :class="fieldErrors.state ? 'border-red-300' : 'border-gray-300'" @blur="validateRequired('state', 'State')">
                                         <p v-if="fieldErrors.state" class="mt-1 text-sm text-red-600">{{ fieldErrors.state }}</p>
-                                        <p v-if="form.errors.state" class="mt-1 text-sm text-red-600">{{ form.errors.state }}</p>
+                                        <p v-else-if="form.errors.state" class="mt-1 text-sm text-red-600">{{ form.errors.state }}</p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -139,7 +138,7 @@ function submit() {
                                             <option v-for="(label, value) in countries" :key="value" :value="value">{{ label }}</option>
                                         </select>
                                         <p v-if="fieldErrors.country" class="mt-1 text-sm text-red-600">{{ fieldErrors.country }}</p>
-                                        <p v-if="form.errors.country" class="mt-1 text-sm text-red-600">{{ form.errors.country }}</p>
+                                        <p v-else-if="form.errors.country" class="mt-1 text-sm text-red-600">{{ form.errors.country }}</p>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Postal Code</label>

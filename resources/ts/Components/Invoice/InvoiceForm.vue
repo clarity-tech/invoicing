@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import ItemRow from './ItemRow.vue';
 import EmailModal from './EmailModal.vue';
@@ -29,12 +29,17 @@ const props = defineProps<{
 const { formatMoney } = useFormatMoney();
 const showEmailModal = ref(false);
 const downloadingPdf = ref(false);
+let pdfTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Reset PDF loading state after download starts
 watch(downloadingPdf, (val) => {
     if (val) {
-        setTimeout(() => { downloadingPdf.value = false; }, 5000);
+        pdfTimer = setTimeout(() => { downloadingPdf.value = false; }, 5000);
     }
+});
+
+onUnmounted(() => {
+    if (pdfTimer) clearTimeout(pdfTimer);
 });
 
 // Build initial items

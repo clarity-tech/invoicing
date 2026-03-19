@@ -76,7 +76,7 @@ function removeContact(index: number) {
                 @blur="validateCustomerName"
             >
             <p v-if="nameError" class="mt-1 text-sm text-red-600">{{ nameError }}</p>
-            <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
+            <p v-else-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
         </div>
 
         <!-- Phone -->

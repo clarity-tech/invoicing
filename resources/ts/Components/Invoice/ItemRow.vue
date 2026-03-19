@@ -18,13 +18,9 @@ const emit = defineEmits<{
     remove: [];
 }>();
 
-const { formatMoney } = useFormatMoney();
+const { formatMoney, CURRENCY_CONFIG } = useFormatMoney();
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-    INR: '₹', USD: '$', EUR: '€', GBP: '£', AUD: 'A$',
-    CAD: 'C$', SGD: 'S$', JPY: '¥', AED: 'د.إ',
-};
-const currencySymbol = computed(() => CURRENCY_SYMBOLS[props.currency] ?? props.currency);
+const currencySymbol = computed(() => CURRENCY_CONFIG[props.currency]?.symbol ?? props.currency);
 
 const lineTotal = computed(() => calcLineTotalWithTax(props.item));
 
