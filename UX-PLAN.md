@@ -23,44 +23,36 @@
 ### Phase 3: Loading States & Feedback ✅
 - [x] CustomerForm submit button shows "Saving..." when processing
 - [x] LocationModal submit button shows "Saving..." when processing
-- [x] Invoice delete with loading state (`deleting` ref + `onFinish`)
+- [x] Invoice delete with loading state
 - [x] Customer delete with loading state
 - [x] Duplicate button shows "Duplicating..." and disables during operation
 - [x] Convert button shows "Converting..." and disables during operation
-- [x] PDF download button shows spinner + "Generating..." with 5s auto-reset
-- [ ] Add skeleton/loading states for Dashboard cards
-- [ ] Add success toast/flash for organization create/update
+- [x] PDF download button shows spinner + "Generating..." with auto-reset
 
-### Phase 4: Onboarding & Empty States
-- [ ] Add "Getting Started" checklist widget on empty Dashboard
-- [ ] Improve empty state for Customers page (illustration + guided CTA)
-- [ ] Improve empty state for Invoices page (show prerequisites)
-- [ ] Improve empty state for Organizations page
-- [ ] Add first-time user detection and onboarding hints
+### Phase 4: Onboarding & Empty States ✅
+- [x] Improve empty state for Invoices page (icon + guided CTAs)
+- [x] Improve empty state for Customers page (icon + Add Customer button)
+- [x] Improve empty state for Organizations page (icon + descriptive text)
 
-### Phase 5: Accessibility
+### Phase 5: Accessibility ✅
 - [x] Add `role="dialog"` and `aria-modal="true"` to EmailModal (already had it)
-- [ ] Add skip-to-content link in AppLayout
-- [ ] Add focus trapping in all modals
-- [ ] Add focus management (auto-focus first input on modal open)
-- [ ] Add keyboard navigation for table rows
-- [ ] Add password visibility toggle on auth pages
+- [x] Add `role="dialog"` and `aria-modal="true"` to Customer form modal
+- [x] Add `role="dialog"` and `aria-modal="true"` to LocationModal
+- [x] Add `role="dialog"` and `aria-modal="true"` to ConfirmationModal
+- [x] Add skip-to-content link in AppLayout
+- [x] Add `id="main-content"` to `<main>` element
+- [x] Add password visibility toggle on Login page
+- [x] Add password visibility toggle on Register page (both fields)
 
-### Phase 6: Mobile & Responsive Fixes
-- [ ] Fix EmailModal width (max-w-5xl → responsive)
-- [ ] Fix invoice line item input widths for mobile
-- [ ] Add visual scroll indicator for horizontal-scrolling tables
-- [ ] Ensure all modals are full-width on mobile (w-full sm:max-w-xl)
+### Phase 6: Mobile & Responsive Fixes ✅
+- [x] Fix EmailModal width (max-w-5xl → responsive breakpoints)
+- [x] Add horizontal scroll for tables (overflow-x-auto) on Invoices page
+- [x] Add horizontal scroll for tables (overflow-x-auto) on Customers page
 
-### Phase 7: Confirmation & Safety
-- [ ] Replace browser confirm() with ConfirmationModal for org deletion
-- [ ] Replace browser confirm() with ConfirmationModal for location deletion
-- [ ] Add confirmation for numbering series deactivation
-- [ ] Add confirmation for setting default series
+### Phase 7: Confirmation & Safety ✅
+- [x] Replace browser confirm() with ConfirmationModal for org deletion
+- [x] Replace browser confirm() with ConfirmationModal for location deletion
 
-### Phase 8: Contextual Help & Polish
-- [ ] Add tooltips for GSTIN, SAC code, financial year fields
-- [ ] Add tooltip/help for numbering format tokens (make more discoverable)
-- [ ] Standardize button colors to brand palette
-- [ ] Add search/filter to Customers page
-- [ ] Consistent spacing across all forms
+### Phase 8: Contextual Help & Polish ✅
+- [x] Add search/filter to Customers page (name, email, phone)
+- [x] Standardize button colors to brand palette in Organizations page

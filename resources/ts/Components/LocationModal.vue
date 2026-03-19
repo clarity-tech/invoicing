@@ -86,7 +86,7 @@ function submit() {
             <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="emit('close')" />
                 <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-                <div class="relative inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
+                <div class="relative inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle" role="dialog" aria-modal="true" :aria-label="location?.id ? 'Edit Location' : 'Add Location'">
                     <form @submit.prevent="submit">
                         <div class="bg-white px-4 pb-4 pt-5 sm:p-6">
                             <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
