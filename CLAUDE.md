@@ -222,8 +222,8 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current coverage: 94.7% (maintain above 90%)
-- Use `createInvoiceWithItems()` and other test helpers in `tests/TestHelpers.php`
+- Current: 972+ tests (895 Unit/Feature + 77 Browser), maintain coverage above 90%
+- Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
 - **✅ PREFERRED APPROACH**: Self-contained tests with inline data creation using Pest Browser API
@@ -361,10 +361,12 @@ it('user can access feature', function () {
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 233 tests with 94.7% coverage (Unit + Feature + Browser)
-- Helper functions: `createOrganizationWithLocation()`, `createInvoiceWithItems()`
+- 972+ tests (895 Unit/Feature + 77 Browser) with 94.7% coverage
+- Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
+- Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 - Edge case testing for large numbers, null values, decimal precision
 - Pest Browser tests with Playwright for real browser testing
+- Browser CRUD tests cover: customers, invoices, estimates, organizations, numbering series, dashboard
 - Screenshots saved in `tests/Browser/Screenshots/`
 - **Browser Test Architecture**: Self-contained tests with Pest Browser API
   - Uses RefreshDatabase trait for clean isolation between tests
@@ -373,8 +375,8 @@ it('user can access feature', function () {
   - All test emails use `.test` TLD (e.g., `user@example.test`)
 
 **Package Management:**
-- npm for frontend dependencies
-- Uses package-lock.json for dependency locking
+- Bun for frontend dependencies
+- Uses bun.lockb for dependency locking
 - Puppeteer available globally, not as project dependency
 
 **Browser Testing Setup:**
