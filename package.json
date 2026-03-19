@@ -4,21 +4,27 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "devDependencies": {
         "@tailwindcss/forms": "0.5.10",
         "@tailwindcss/typography": "0.5.16",
         "@tailwindcss/vite": "^4.1.11",
+        "@vue/test-utils": "^2.4.6",
         "autoprefixer": "^10.4.21",
         "axios": "^1.10.0",
         "concurrently": "^9.2.0",
+        "happy-dom": "^20.8.4",
         "laravel-vite-plugin": "^2.0.0",
         "playwright": "^1.54.1",
         "postcss": "^8.5.6",
         "tailwindcss": "^4.1.11",
         "tw-animate-css": "^1.3.5",
-        "vite": "^7.0.5"
+        "vite": "^7.0.5",
+        "vitest": "^4.1.0"
     },
     "dependencies": {
         "@alpinejs/anchor": "^3.14.9",
