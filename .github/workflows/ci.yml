@@ -78,6 +78,17 @@ jobs:
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MAIL_MAILER=array" >> .env
           echo "TELESCOPE_ENABLED=false" >> .env
+          echo "CHROME_SERVICE_ENABLED=true" >> .env
+          echo "CHROME_SERVICE_URL=http://localhost:3000" >> .env
+
+      - name: Start Chrome PDF service
+        run: |
+          docker run -d --name chrome-pdf \
+            -p 3000:3000 \
+            -v ${{ github.workspace }}/docker/chrome/pdf-service.js:/usr/src/app/pdf-service.js \
+            ghcr.io/zenika/alpine-chrome:with-puppeteer \
+            node /usr/src/app/pdf-service.js
+          timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 1; done'
 
       - name: Run Unit & Feature tests
         run: php artisan test --testsuite=Unit,Feature --compact
