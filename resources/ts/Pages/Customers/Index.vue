@@ -28,11 +28,12 @@ const searchQuery = ref('');
 const filteredCustomers = computed(() => {
     if (!searchQuery.value.trim()) return props.customers.data;
     const q = searchQuery.value.toLowerCase();
-    return props.customers.data.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (primaryEmail(c) && primaryEmail(c).toLowerCase().includes(q)) ||
-        (c.phone && c.phone.includes(q))
-    );
+    return props.customers.data.filter(c => {
+        const email = primaryEmail(c);
+        return c.name.toLowerCase().includes(q) ||
+            (email && email.toLowerCase().includes(q)) ||
+            (c.phone && c.phone.includes(q));
+    });
 });
 
 const showForm = ref(false);
@@ -195,7 +196,7 @@ function locationSummary(customer: Customer): string {
                     <input
                         v-model="searchQuery"
                         type="text"
-                        placeholder="Search customers by name, email, or phone..."
+                        placeholder="Filter this page by name, email, or phone..."
                         class="block w-full rounded-md border-gray-300 pl-10 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                     />
                 </div>
