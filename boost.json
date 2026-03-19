@@ -12,8 +12,10 @@
     ],
     "sail": true,
     "skills": [
+        "wayfinder-development",
         "livewire-development",
         "pest-testing",
+        "inertia-vue-development",
         "tailwindcss-development",
         "fortify-development",
         "medialibrary-development"
