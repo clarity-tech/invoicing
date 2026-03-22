@@ -82,16 +82,15 @@ jobs:
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MAIL_MAILER=array" >> .env
           echo "TELESCOPE_ENABLED=false" >> .env
-          echo "CHROME_SERVICE_ENABLED=true" >> .env
-          echo "CHROME_SERVICE_URL=http://localhost:3000" >> .env
+          echo "GOTENBERG_ENABLED=true" >> .env
+          echo "GOTENBERG_URL=http://localhost:3000" >> .env
 
-      - name: Start Chrome PDF service
+      - name: Start Gotenberg PDF service
         run: |
-          docker run -d --name chrome-pdf \
+          docker run -d --name gotenberg \
             -p 3000:3000 \
-            -v ${{ github.workspace }}/docker/chrome/pdf-service.js:/usr/src/app/pdf-service.js \
-            ghcr.io/zenika/alpine-chrome:with-puppeteer \
-            node /usr/src/app/pdf-service.js
+            gotenberg/gotenberg:8 \
+            gotenberg --chromium-disable-javascript=true --api-timeout=30s
           timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 1; done'
 
       - name: Run Unit & Feature tests
@@ -115,8 +114,15 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium --with-deps
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies, build assets, and install Playwright
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+          npx playwright install chromium --with-deps
 
       - name: Prepare test environment
         run: |
