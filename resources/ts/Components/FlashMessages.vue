@@ -22,7 +22,7 @@ watch(
 <template>
     <div
         v-if="visible && hasFlash"
-        class="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8"
+        class="mb-4 px-4 sm:px-0"
     >
         <div v-if="flash.success" class="rounded-md bg-green-50 p-4">
             <p class="text-sm font-medium text-green-800">

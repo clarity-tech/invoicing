@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import InvoiceForm from '@/Components/Invoice/InvoiceForm.vue';
 import PaymentModal from '@/Components/Invoice/PaymentModal.vue';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/Components/ui/breadcrumb';
 import { formatDate } from '@/composables/useFormatDate';
 import { formatMoney } from '@/composables/useFormatMoney';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -38,10 +45,9 @@ function deletePayment(paymentId: number) {
         return;
     }
 
-    router.delete(
-        `/invoices/${props.invoice.id}/payments/${paymentId}`,
-        { preserveScroll: true },
-    );
+    router.delete(`/invoices/${props.invoice.id}/payments/${paymentId}`, {
+        preserveScroll: true,
+    });
 }
 </script>
 
@@ -49,7 +55,28 @@ function deletePayment(paymentId: number) {
     <AppLayout
         :title="`Edit ${invoice.type === 'estimate' ? 'Estimate' : 'Invoice'}`"
     >
-        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <template #header>
+            <Breadcrumb>
+                <BreadcrumbItem>
+                    <BreadcrumbLink href="/invoices">
+                        Invoices
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbPage>
+                        Edit
+                        {{
+                            invoice.type === 'estimate'
+                                ? 'Estimate'
+                                : 'Invoice'
+                        }}
+                    </BreadcrumbPage>
+                </BreadcrumbItem>
+            </Breadcrumb>
+        </template>
+
+        <div class="py-4">
             <InvoiceForm
                 mode="edit"
                 :type="invoice.type"
@@ -71,9 +98,7 @@ function deletePayment(paymentId: number) {
                         Payments
                     </h3>
                     <button
-                        v-if="
-                            (invoice.amount_paid ?? 0) < (invoice.total ?? 0)
-                        "
+                        v-if="(invoice.amount_paid ?? 0) < (invoice.total ?? 0)"
                         type="button"
                         class="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
                         @click="showPaymentModal = true"
@@ -123,27 +148,27 @@ function deletePayment(paymentId: number) {
                         <thead class="bg-gray-50">
                             <tr>
                                 <th
-                                    class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500"
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Date
                                 </th>
                                 <th
-                                    class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500"
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Method
                                 </th>
                                 <th
-                                    class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500"
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Reference
                                 </th>
                                 <th
-                                    class="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500"
+                                    class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Amount
                                 </th>
                                 <th
-                                    class="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500"
+                                    class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Actions
                                 </th>
@@ -188,10 +213,7 @@ function deletePayment(paymentId: number) {
                     </table>
                 </div>
 
-                <p
-                    v-else
-                    class="text-center text-sm text-gray-400"
-                >
+                <p v-else class="text-center text-sm text-gray-400">
                     No payments recorded yet.
                 </p>
             </div>

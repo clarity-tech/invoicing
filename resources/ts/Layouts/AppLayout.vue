@@ -19,18 +19,19 @@ defineProps<{
         </a>
         <NavigationMenu />
 
-        <FlashMessages />
-
         <!-- Page Heading -->
         <header v-if="$slots.header" class="bg-white shadow">
-            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <slot name="header" />
+            <div class="mx-auto flex min-h-17 w-full max-w-7xl items-center px-4 py-4 sm:px-6 lg:px-8">
+                <div class="w-full">
+                    <slot name="header" />
+                </div>
             </div>
         </header>
 
         <!-- Page Content -->
         <main id="main-content">
             <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+                <FlashMessages />
                 <slot />
             </div>
         </main>

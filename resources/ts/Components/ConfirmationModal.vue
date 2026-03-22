@@ -22,7 +22,7 @@ const emit = defineEmits<{
             >
                 <!-- Backdrop -->
                 <div
-                    class="bg-opacity-75 fixed inset-0 bg-gray-500 transition-opacity"
+                    class="fixed inset-0 bg-gray-500/75 transition-opacity"
                     @click="emit('cancel')"
                 />
 
