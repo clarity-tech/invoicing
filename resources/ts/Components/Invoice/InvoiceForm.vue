@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, useForm, router, usePage } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch, onUnmounted } from 'vue';
 import EmailModal from './EmailModal.vue';
 import ItemRow from './ItemRow.vue';
@@ -204,12 +204,6 @@ function cancel() {
     router.get('/invoices');
 }
 
-const pageTitle = computed(() => {
-    const typeLabel = props.type === 'estimate' ? 'Estimate' : 'Invoice';
-
-    return props.mode === 'edit' ? `Edit ${typeLabel}` : `Create ${typeLabel}`;
-});
-
 const selectedBillingLocation = computed(() =>
     customerLocations.value.find((l) => l.id === form.customer_location_id),
 );
@@ -226,20 +220,9 @@ const flash = computed(() => (page.props as any).flash ?? {});
 
 <template>
     <div class="px-4 py-6 sm:px-0">
-        <!-- Header -->
-        <div class="mb-6 flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <Link
-                    href="/invoices"
-                    class="text-brand-600 hover:text-brand-900"
-                >
-                    &larr; Back to Invoices
-                </Link>
-                <h1 class="text-3xl font-bold text-gray-900">
-                    {{ pageTitle }}
-                </h1>
-            </div>
-            <div v-if="mode === 'edit' && invoice?.ulid" class="flex space-x-2">
+        <!-- Action buttons (edit mode only) -->
+        <div v-if="mode === 'edit' && invoice?.ulid" class="mb-6 flex justify-end">
+            <div class="flex space-x-2">
                 <button
                     type="button"
                     class="rounded bg-purple-500 px-4 py-2 font-bold text-white hover:bg-purple-700"

@@ -2,7 +2,9 @@
 import { Link, useForm, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+
+defineOptions({ layout: SettingsLayout });
 import type {
     InvoiceNumberingSeries,
     Organization,
@@ -199,39 +201,20 @@ const formatTokens = [
 </script>
 
 <template>
-    <AppLayout title="Numbering Series">
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl leading-tight font-semibold text-gray-800">
-                    Numbering Series
-                </h2>
-                <button
-                    v-if="!showForm"
-                    type="button"
-                    class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
-                    @click="openCreate"
-                >
-                    Create New Series
-                </button>
-            </div>
-        </template>
-
-        <div class="py-4">
-            <!-- Settings sub-nav -->
-            <div class="mb-6 flex gap-4 border-b border-gray-200 pb-3 px-4 sm:px-0">
-                <Link
-                    href="/numbering-series"
-                    class="border-b-2 border-brand-500 text-sm font-medium text-brand-600"
-                >
-                    Numbering Series
-                </Link>
-                <Link
-                    href="/email-templates"
-                    class="text-sm font-medium text-gray-500 hover:text-gray-700"
-                >
-                    Email Templates
-                </Link>
-            </div>
+    <div>
+        <div class="mb-6 flex items-center justify-between px-4 sm:px-0">
+            <h2 class="text-xl font-semibold text-gray-900">
+                Numbering Series
+            </h2>
+            <button
+                v-if="!showForm"
+                type="button"
+                class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+                @click="openCreate"
+            >
+                Create New Series
+            </button>
+        </div>
 
             <!-- Create/Edit Form -->
             <div
@@ -675,7 +658,6 @@ const formatTokens = [
                     </div>
                 </nav>
             </div>
-        </div>
 
         <!-- Delete Confirmation -->
         <ConfirmationModal
@@ -687,5 +669,5 @@ const formatTokens = [
             @confirm="deleteSeries"
             @cancel="confirmingDelete = false"
         />
-    </AppLayout>
+    </div>
 </template>

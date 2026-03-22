@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import InvoiceForm from '@/Components/Invoice/InvoiceForm.vue';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/Components/ui/breadcrumb';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import type {
     Customer,
@@ -30,7 +37,24 @@ defineProps<{
     <AppLayout
         :title="`Create ${type === 'estimate' ? 'Estimate' : 'Invoice'}`"
     >
-        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <template #header>
+            <Breadcrumb>
+                <BreadcrumbItem>
+                    <BreadcrumbLink href="/invoices">
+                        Invoices
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbPage>
+                        Create
+                        {{ type === 'estimate' ? 'Estimate' : 'Invoice' }}
+                    </BreadcrumbPage>
+                </BreadcrumbItem>
+            </Breadcrumb>
+        </template>
+
+        <div class="py-4">
             <InvoiceForm
                 mode="create"
                 :type="type"

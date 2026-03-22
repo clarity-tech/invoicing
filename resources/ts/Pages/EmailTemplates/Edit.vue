@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/Components/ui/breadcrumb';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import TipTapEditor from '@/Components/TipTapEditor.vue';
@@ -110,50 +117,38 @@ async function preview() {
 
 <template>
     <AppLayout :title="`Edit ${label}`">
-        <div class="mx-auto max-w-6xl py-6 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="mb-6 flex items-center justify-between">
-                <div>
-                    <div class="flex items-center gap-3">
-                        <a
-                            href="/email-templates"
-                            class="text-gray-400 hover:text-gray-600"
-                        >
-                            <svg
-                                class="h-5 w-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M15 19l-7-7 7-7"
-                                />
-                            </svg>
-                        </a>
-                        <h2 class="text-xl font-semibold text-gray-900">
-                            {{ label }}
-                        </h2>
-                        <span
-                            v-if="template.is_customized"
-                            class="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-800"
-                        >
-                            Customized
-                        </span>
-                        <span
-                            v-else
-                            class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600"
-                        >
-                            Default
-                        </span>
-                    </div>
-                    <p class="mt-1 ml-8 text-sm text-gray-500">
-                        {{ description }}
-                    </p>
-                </div>
+        <template #header>
+            <div class="flex items-center gap-3">
+                <Breadcrumb>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink href="/email-templates">
+                            Email Templates
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>{{ label }}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                </Breadcrumb>
+                <span
+                    v-if="template.is_customized"
+                    class="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-800"
+                >
+                    Customized
+                </span>
+                <span
+                    v-else
+                    class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600"
+                >
+                    Default
+                </span>
             </div>
+        </template>
+
+        <div class="py-4">
+            <p class="mb-6 text-sm text-gray-500">
+                {{ description }}
+            </p>
 
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
                 <!-- Main Editor (3 cols) -->
@@ -206,9 +201,7 @@ async function preview() {
                             @click="save"
                         >
                             {{
-                                form.processing
-                                    ? 'Saving...'
-                                    : 'Save Template'
+                                form.processing ? 'Saving...' : 'Save Template'
                             }}
                         </button>
                         <button
@@ -267,10 +260,9 @@ async function preview() {
                                 >
                                     {{ variable }}
                                 </code>
-                                <span
-                                    class="truncate text-xs text-gray-500"
-                                    >{{ desc }}</span
-                                >
+                                <span class="truncate text-xs text-gray-500">{{
+                                    desc
+                                }}</span>
                             </button>
                         </div>
                     </div>
