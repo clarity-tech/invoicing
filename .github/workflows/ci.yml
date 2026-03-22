@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, with-jetstream]
+    branches: [main]
   pull_request:
     branches: [main, with-jetstream]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -92,6 +96,53 @@ jobs:
 
       - name: Run Unit & Feature tests
         run: php artisan test --testsuite=Unit,Feature --compact
+
+  test-octane:
+    name: Production Image (FrankenPHP) Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: mbstring, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          sed -i 's/APP_ENV=local/APP_ENV=testing/' .env
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|' .env
+          echo "TELESCOPE_ENABLED=false" >> .env
+          touch database/database.sqlite
+          php artisan migrate --force
+
+      - name: Run production image tests
+        run: ./docker/production/test-octane.sh
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs invoicing-octane-test 2>/dev/null || true
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: octane-browser-screenshots
+          path: tests/Browser/Screenshots/
+          retention-days: 7
 
   test-frontend:
     name: Frontend Tests
