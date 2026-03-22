@@ -204,7 +204,7 @@ function removeEmail(index: number): void {
 }
 
 function saveBasics(): void {
-    if (!editingOrg.value) {
+    if (!editingOrg.value?.id) {
         return;
     }
 
@@ -217,7 +217,7 @@ function saveBasics(): void {
 }
 
 function saveLocation(): void {
-    if (!editingOrg.value) {
+    if (!editingOrg.value?.id) {
         return;
     }
 
@@ -230,7 +230,7 @@ function saveLocation(): void {
 }
 
 function saveBankDetails(): void {
-    if (!editingOrg.value) {
+    if (!editingOrg.value?.id) {
         return;
     }
 
