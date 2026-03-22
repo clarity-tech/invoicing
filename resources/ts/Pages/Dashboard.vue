@@ -138,7 +138,13 @@ const totalStatusCount = computed(() =>
 
 <template>
     <AppLayout title="Dashboard">
-        <div class="px-4 sm:px-0">
+        <template #header>
+            <h2 class="text-xl leading-tight font-semibold text-gray-800">
+                Dashboard
+            </h2>
+        </template>
+
+        <div class="px-4 py-4 sm:px-0">
             <!-- Header with Period Selector -->
             <div
                 class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
