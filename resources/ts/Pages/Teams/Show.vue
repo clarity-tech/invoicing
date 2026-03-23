@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AppLayout from '@/Layouts/AppLayout.vue';
-import UpdateTeamNameForm from './Partials/UpdateTeamNameForm.vue';
-import TeamMemberManager from './Partials/TeamMemberManager.vue';
 import DeleteTeamForm from './Partials/DeleteTeamForm.vue';
+import TeamMemberManager from './Partials/TeamMemberManager.vue';
+import UpdateTeamNameForm from './Partials/UpdateTeamNameForm.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 
 interface Role {
     key: string;
@@ -48,7 +48,7 @@ interface Permissions {
     canUpdateTeamMembers: boolean;
 }
 
-const props = defineProps<{
+defineProps<{
     team: Team;
     availableRoles: Role[];
     permissions: Permissions;
@@ -60,7 +60,7 @@ const props = defineProps<{
 <template>
     <AppLayout title="Organization Settings">
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl leading-tight font-semibold text-gray-800">
                 Organization Settings
             </h2>
         </template>
@@ -81,7 +81,9 @@ const props = defineProps<{
                     class="mt-10 sm:mt-0"
                 />
 
-                <template v-if="permissions.canDeleteTeam && !team.personal_team">
+                <template
+                    v-if="permissions.canDeleteTeam && !team.personal_team"
+                >
                     <div class="hidden sm:block">
                         <div class="py-8">
                             <div class="border-t border-gray-200" />

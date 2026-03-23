@@ -25,7 +25,9 @@ function deleteTeam(): void {
     <div class="md:grid md:grid-cols-3 md:gap-6">
         <div class="md:col-span-1">
             <div class="px-4 sm:px-0">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">Delete Team</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Delete Team
+                </h3>
                 <p class="mt-1 text-sm text-gray-600">
                     Permanently delete this team.
                 </p>
@@ -36,13 +38,16 @@ function deleteTeam(): void {
             <div class="overflow-hidden bg-white shadow sm:rounded-md">
                 <div class="px-4 py-5 sm:p-6">
                     <div class="max-w-xl text-sm text-gray-600">
-                        Once a team is deleted, all of its resources and data will be permanently deleted. Before deleting this team, please download any data or information regarding this team that you wish to retain.
+                        Once a team is deleted, all of its resources and data
+                        will be permanently deleted. Before deleting this team,
+                        please download any data or information regarding this
+                        team that you wish to retain.
                     </div>
 
                     <div class="mt-5">
                         <button
                             type="button"
-                            class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-red-500"
+                            class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase hover:bg-red-500"
                             @click="confirmingTeamDeletion = true"
                         >
                             Delete Team

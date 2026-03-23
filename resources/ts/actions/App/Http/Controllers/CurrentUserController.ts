@@ -1,38 +1,44 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
+import {
+    queryParams,
+    type RouteQueryOptions,
+    type RouteDefinition,
+} from './../../../../wayfinder';
 /**
-* @see \App\Http\Controllers\CurrentUserController::destroy
-* @see app/Http/Controllers/CurrentUserController.php:14
-* @route '/user'
-*/
-export const destroy = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+ * @see \App\Http\Controllers\CurrentUserController::destroy
+ * @see app/Http/Controllers/CurrentUserController.php:14
+ * @route '/user'
+ */
+export const destroy = (
+    options?: RouteQueryOptions,
+): RouteDefinition<'delete'> => ({
     url: destroy.url(options),
     method: 'delete',
-})
+});
 
 destroy.definition = {
-    methods: ["delete"],
+    methods: ['delete'],
     url: '/user',
-} satisfies RouteDefinition<["delete"]>
+} satisfies RouteDefinition<['delete']>;
 
 /**
-* @see \App\Http\Controllers\CurrentUserController::destroy
-* @see app/Http/Controllers/CurrentUserController.php:14
-* @route '/user'
-*/
+ * @see \App\Http\Controllers\CurrentUserController::destroy
+ * @see app/Http/Controllers/CurrentUserController.php:14
+ * @route '/user'
+ */
 destroy.url = (options?: RouteQueryOptions) => {
-    return destroy.definition.url + queryParams(options)
-}
+    return destroy.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\CurrentUserController::destroy
-* @see app/Http/Controllers/CurrentUserController.php:14
-* @route '/user'
-*/
+ * @see \App\Http\Controllers\CurrentUserController::destroy
+ * @see app/Http/Controllers/CurrentUserController.php:14
+ * @route '/user'
+ */
 destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(options),
     method: 'delete',
-})
+});
 
-const CurrentUserController = { destroy }
+const CurrentUserController = { destroy };
 
-export default CurrentUserController
+export default CurrentUserController;

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import AppLayout from '@/Layouts/AppLayout.vue';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
-import TwoFactorAuthenticationForm from './Partials/TwoFactorAuthenticationForm.vue';
-import LogoutOtherSessionsForm from './Partials/LogoutOtherSessionsForm.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
+import LogoutOtherSessionsForm from './Partials/LogoutOtherSessionsForm.vue';
+import TwoFactorAuthenticationForm from './Partials/TwoFactorAuthenticationForm.vue';
+import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
+import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 
 interface Session {
     ip_address: string;
@@ -40,7 +40,7 @@ defineProps<{
 <template>
     <AppLayout title="Profile">
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl leading-tight font-semibold text-gray-800">
                 Profile
             </h2>
         </template>
@@ -73,10 +73,15 @@ defineProps<{
                     </div>
                 </template>
 
-                <div v-if="canManageTwoFactorAuthentication" class="mt-10 sm:mt-0">
+                <div
+                    v-if="canManageTwoFactorAuthentication"
+                    class="mt-10 sm:mt-0"
+                >
                     <TwoFactorAuthenticationForm
                         :user="user"
-                        :confirms-two-factor-authentication="confirmsTwoFactorAuthentication"
+                        :confirms-two-factor-authentication="
+                            confirmsTwoFactorAuthentication
+                        "
                     />
                 </div>
 
