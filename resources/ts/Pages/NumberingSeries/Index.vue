@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useForm, router } from '@inertiajs/vue3';
+import { Link, useForm, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -217,6 +217,22 @@ const formatTokens = [
         </template>
 
         <div class="py-4">
+            <!-- Settings sub-nav -->
+            <div class="mb-6 flex gap-4 border-b border-gray-200 pb-3 px-4 sm:px-0">
+                <Link
+                    href="/numbering-series"
+                    class="border-b-2 border-brand-500 text-sm font-medium text-brand-600"
+                >
+                    Numbering Series
+                </Link>
+                <Link
+                    href="/email-templates"
+                    class="text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                    Email Templates
+                </Link>
+            </div>
+
             <!-- Create/Edit Form -->
             <div
                 v-if="showForm"
