@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import InvoiceForm from '@/Components/Invoice/InvoiceForm.vue';
 import PaymentModal from '@/Components/Invoice/PaymentModal.vue';
+import { formatDate } from '@/composables/useFormatDate';
+import { formatMoney } from '@/composables/useFormatMoney';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import type {
     Invoice,
@@ -23,19 +25,12 @@ const props = defineProps<{
 
 const showPaymentModal = ref(false);
 
-function formatCurrency(amount: number): string {
-    return (amount / 100).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
+const balanceDue = computed(() =>
+    Math.max(0, (props.invoice.total ?? 0) - (props.invoice.amount_paid ?? 0)),
+);
 
-function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+function fmt(amount: number): string {
+    return formatMoney(amount, props.invoice.currency);
 }
 
 function deletePayment(paymentId: number) {
@@ -48,8 +43,6 @@ function deletePayment(paymentId: number) {
         { preserveScroll: true },
     );
 }
-
-const payments = ref(props.invoice.payments ?? []);
 </script>
 
 <template>
@@ -96,13 +89,13 @@ const payments = ref(props.invoice.payments ?? []);
                     <div>
                         <div class="text-xs text-gray-500">Total</div>
                         <div class="text-sm font-semibold">
-                            {{ formatCurrency(invoice.total ?? 0) }}
+                            {{ fmt(invoice.total ?? 0) }}
                         </div>
                     </div>
                     <div>
                         <div class="text-xs text-gray-500">Paid</div>
                         <div class="text-sm font-semibold text-green-600">
-                            {{ formatCurrency(invoice.amount_paid ?? 0) }}
+                            {{ fmt(invoice.amount_paid ?? 0) }}
                         </div>
                     </div>
                     <div>
@@ -116,15 +109,7 @@ const payments = ref(props.invoice.payments ?? []);
                                     : 'text-red-600'
                             "
                         >
-                            {{
-                                formatCurrency(
-                                    Math.max(
-                                        0,
-                                        (invoice.total ?? 0) -
-                                            (invoice.amount_paid ?? 0),
-                                    ),
-                                )
-                            }}
+                            {{ fmt(balanceDue) }}
                         </div>
                     </div>
                 </div>
@@ -187,7 +172,7 @@ const payments = ref(props.invoice.payments ?? []);
                                 <td
                                     class="px-4 py-3 text-right text-sm font-medium text-green-600"
                                 >
-                                    {{ formatCurrency(payment.amount) }}
+                                    {{ fmt(payment.amount) }}
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <button

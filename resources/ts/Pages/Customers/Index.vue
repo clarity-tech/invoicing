@@ -122,12 +122,11 @@ function deleteCustomer() {
         .optimistic((page) => {
             const customers = (page.props as any).customers;
 
-            if (Array.isArray(customers)) {
-                const idx = customers.findIndex((c: any) => c.id === id);
-
-                if (idx !== -1) {
-                    customers.splice(idx, 1);
-                }
+            if (customers?.data) {
+                customers.data = customers.data.filter(
+                    (c: any) => c.id !== id,
+                );
+                customers.total = Math.max(0, customers.total - 1);
             }
         })
         .delete(`/customers/${id}`, {
