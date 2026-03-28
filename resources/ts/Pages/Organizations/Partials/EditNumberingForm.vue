@@ -219,6 +219,7 @@ const formatTokens = [
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Name *</label>
                             <input
+                                id="ns-name"
                                 v-model="form.name"
                                 type="text"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
@@ -229,6 +230,7 @@ const formatTokens = [
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Prefix *</label>
                             <input
+                                id="ns-prefix"
                                 v-model="form.prefix"
                                 type="text"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
@@ -239,6 +241,7 @@ const formatTokens = [
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Format Pattern *</label>
                             <input
+                                id="ns-format_pattern"
                                 v-model="form.format_pattern"
                                 type="text"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
@@ -249,6 +252,7 @@ const formatTokens = [
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Reset Frequency *</label>
                             <select
+                                id="ns-reset_frequency"
                                 v-model="form.reset_frequency"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                             >
