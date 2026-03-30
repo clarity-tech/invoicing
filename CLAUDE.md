@@ -25,17 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Container Management
-```bash
-# Start all services
-sail up -d
-
-# Stop all services
-sail down
-
-# View logs
-sail logs
-```
+> **First-time setup**: see README.md. TL;DR: `sail up -d && sail php artisan app:setup --seed && sail bun install && sail bun run build`
 
 ### Laravel Commands
 ```bash
@@ -48,14 +38,14 @@ sail php artisan make:migration [migration_name]
 # Create model with migration
 sail php artisan make:model [ModelName] -m
 
-# Create Livewire component
-sail php artisan make:livewire [ComponentName]
-
 # Create custom cast
 sail php artisan make:cast [CastName]
 
 # Create mailable
 sail php artisan make:mail [MailableName]
+
+# Regenerate Wayfinder typed routes (after route changes)
+sail php artisan wayfinder:generate --path=resources/js --no-interaction
 
 # Clear caches
 sail php artisan config:clear
@@ -110,17 +100,6 @@ ls -la tests/Browser/Screenshots/
 # Note: Uses Playwright (runs inside app container, no external browser service)
 ```
 
-### Production Image Testing (FrankenPHP + Octane)
-```bash
-# Build the production Docker image and run browser tests against it.
-# Validates: Docker build, entrypoint, Octane serving, singleton leaks.
-# Requires: Docker on host + running Sail (sail up -d)
-./docker/production/test-octane.sh
-
-# Same script runs in CI (test-octane job) for local/CI parity.
-# Uses port 8001 to avoid conflicts with Sail on port 80.
-```
-
 ### Database Commands
 ```bash
 # Check migration status
@@ -138,16 +117,6 @@ sail php artisan db:seed --class=ProductionSeeder
 # Rollback migration
 sail php artisan migrate:rollback
 ```
-
-### Production Seeders
-- **ProductionSeeder.php** - Main orchestrator with environment safety for production/staging/testing
-- **ProductionUserSeeder.php** - Clarity Technologies organization with static users (accounts@claritytech.io, manash@claritytech.io)
-- **ProductionCustomerSeeder.php** - Three real customers with accurate addresses and GSTIN numbers:
-  - RxNow Pharmacy LLC (Dubai, AED currency)
-  - DocOnline Health India Pvt Ltd (Bangalore, INR currency, GSTIN: 29AAFCD9711R1ZV)
-  - Krishna Institute of Medical Sciences (Hyderabad, INR currency, GSTIN: 36AACCK2540G1ZU)
-- **ProductionInvoiceSeeder.php** - Sample multi-currency invoices and estimates for demonstration
-- **Environment Safety**: Production seeders can run in any environment but ask for confirmation in production/staging
 
 ### Code Formatting & Linting Commands
 ```bash
@@ -211,18 +180,6 @@ sail bun run format:check  # check only
 sail bun run types:check
 ```
 
-### Shell Access
-```bash
-# Access container shell for Linux commands
-sail shell
-
-# Access PostgreSQL directly
-sail psql
-
-# Access database via pgweb interface
-# Open http://localhost:8081 in browser
-```
-
 ## Architecture Overview
 
 ### Core Architectural Patterns
@@ -265,7 +222,7 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current: 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets, maintain coverage above 90%
+- Current: 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
 - Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
@@ -360,22 +317,35 @@ it('user can access feature', function () {
 - `EstimateToInvoiceConverter` - Business logic for estimate-to-invoice conversion
 - `DocumentMailer` - Email functionality for sending documents
 
-**Livewire Components:**
-- `OrganizationManager` / `CustomerManager` - Full CRUD with location and email management
-- `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations and tax template integration
+**Controllers (Inertia):**
+- `DashboardController` - Analytics with period filters, KPIs, trends
+- `OrganizationController` - Organization CRUD with show/edit pages, logo upload, bank details
+- `OrganizationSetupController` - 4-step setup wizard
+- `CustomerController` - Customer CRUD with location management
+- `InvoiceController` - Invoice/estimate CRUD, duplicate, convert, email, PDF
+- `NumberingSeriesController` - Numbering series CRUD with live preview
+- `UserProfileController` - Profile settings (Inertia render)
+- `TeamController` - Team management with member roles
 
 **Custom Casts:**
 - `ContactCollectionCast` - Seamless JSON ↔ ContactCollection conversion with error handling
 
 ## URL Structure & Routes
-- `/organizations` - Organization management (Livewire component)
-- `/customers` - Customer management (Livewire component)  
-- `/invoices` - Invoice and estimate management (Livewire component)
-- `/tax-templates` - Tax template management per organization
-- `/invoices/{ulid}` - Public invoice view (no auth required)
-- `/estimates/{ulid}` - Public estimate view (no auth required)
-- `/invoices/{ulid}/pdf` - Download invoice PDF
-- `/estimates/{ulid}/pdf` - Download estimate PDF
+- `/organizations` - Organization list (redirects to show for single-org users)
+- `/organizations/{id}` - Organization overview
+- `/organizations/{id}/edit` - Organization settings (tabbed: basics, location, bank, logo)
+- `/customers` - Customer management (Inertia + Vue)
+- `/invoices` - Invoice and estimate list with filters
+- `/invoices/create` - Create invoice form
+- `/invoices/{id}/edit` - Edit invoice form
+- `/estimates/create` - Create estimate form
+- `/numbering-series` - Invoice numbering series management
+- `/dashboard` - Business analytics dashboard
+- `/user/profile` - User profile management
+- `/teams/{id}` - Team/organization member management
+- `/organization/setup` - Organization setup wizard (first-time)
+- `/invoices/view/{ulid}` - Public invoice view (no auth)
+- `/estimates/view/{ulid}` - Public estimate view (no auth)
 
 ## Important Implementation Details
 
@@ -399,16 +369,30 @@ it('user can access feature', function () {
 - Currency enum fields for type safety
 - JSON email collections with custom cast validation
 
-**Livewire Architecture:**
-- Full-stack components handle complete CRUD operations
-- `#[Computed]` properties for efficient data loading
-- Multi-step wizard pattern in InvoiceWizard
-- Real-time calculation updates in UI
+**Inertia + Vue 3 Architecture:**
+- Vue 3 pages in `resources/js/Pages/` with TypeScript and Composition API
+- Shared components in `resources/js/Components/`
+- Composables: `useFormatMoney`, `useInvoiceCalculator`, `useFlash`
+- Layouts: `AppLayout.vue`, `GuestLayout.vue`, `NavigationMenu.vue`
+- Wayfinder for type-safe routing (imports from `@/routes/` and `@/actions/`)
+- Inertia `useForm()` for all form submissions with server-side validation
+- Tab-based editing via URL query params (e.g., `/organizations/1/edit?tab=bank`)
+- `HandleInertiaRequests` middleware shares auth, flash, and team data
+- `lucide-vue-next` for icons
+
+**Object Storage (RustFS/S3):**
+- Local: RustFS (S3-compatible) via Sail on port 9000
+- Production: S3/DigitalOcean Spaces
+- Media library defaults to S3 disk via `config/media-library.php`
+- Bucket auto-created by `sail php artisan app:setup-storage`
+- Public read policy applied automatically for logo/attachment URLs
+- Console: http://localhost:9001 (sail/password)
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 178 test cases (95 Unit/Feature + 83 Browser) expanding to 250+ with datasets
+- 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
 - Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
+- Feature tests use `assertInertia()` for Inertia response assertions
 - Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 - Edge case testing for large numbers, null values, decimal precision
 - Pest Browser tests with Playwright for real browser testing
@@ -422,8 +406,43 @@ it('user can access feature', function () {
 
 **Package Management:**
 - Bun for frontend dependencies
-- Uses bun.lock (text format) for dependency locking
+- Uses bun.lockb for dependency locking
 - ESLint + Prettier for frontend linting/formatting (`bun run lint`, `bun run format`)
+
+**Frontend Directory Structure:**
+```
+resources/js/
+├── app.ts                    # Vue/Inertia entry point
+├── env.d.ts                  # TypeScript declarations
+├── types/index.d.ts          # Model/enum TypeScript interfaces
+├── lib/utils.ts              # cn() helper for Tailwind class merging
+├── composables/
+│   ├── useFormatMoney.ts     # Multi-currency formatting (9 currencies)
+│   ├── useInvoiceCalculator.ts # Client-side line item math
+│   └── useFlash.ts           # Flash message reactivity
+├── Layouts/
+│   ├── AppLayout.vue         # Authenticated layout with nav
+│   ├── GuestLayout.vue       # Auth pages layout
+│   └── NavigationMenu.vue    # Top navigation bar
+├── Pages/
+│   ├── Auth/                 # Login, Register, ForgotPassword, etc.
+│   ├── Dashboard.vue         # Analytics dashboard
+│   ├── Customers/Index.vue   # Customer list + CRUD
+│   ├── Invoices/             # Index, Create, Edit
+│   ├── NumberingSeries/      # Index with CRUD dialog
+│   ├── Organizations/        # Index, Show, Edit + Partials/
+│   ├── Profile/              # Show + Partials/
+│   └── Teams/                # Create, Show + Partials/
+├── Components/
+│   ├── Invoice/              # InvoiceForm, ItemRow, EmailModal
+│   ├── MoneyDisplay.vue      # Currency-aware amount display
+│   ├── StatusBadge.vue       # Invoice status badges
+│   ├── ConfirmationModal.vue # Reusable confirm dialog
+│   └── FlashMessages.vue     # Auto-dismissing flash alerts
+├── wayfinder/                # Generated Wayfinder helpers
+├── routes/                   # Generated typed route functions
+└── actions/                  # Generated typed controller actions
+```
 
 **Browser Testing Setup:**
 - Pest Browser plugin with Playwright (runs inside app container)
@@ -431,11 +450,6 @@ it('user can access feature', function () {
 - Automatic screenshot capture on failure
 - No external browser service needed (no Selenium)
 - Screenshots stored in `tests/Browser/Screenshots/`
-
-## Development Database
-- pgweb interface available at http://localhost:8081
-- Direct PostgreSQL access via `sail psql`
-- All services accessible at http://localhost
 
 ## Demo Data Summary
 - **Organizations**: 8 organizations with different currencies
@@ -451,86 +465,9 @@ it('user can access feature', function () {
   - EUR: VAT 7/19%, VAT 0%
   - GBP: VAT 5/20%, VAT 0%
 
-## UAE Customer Details
-- **RxNow LLC**: Healthcare company in Dubai Healthcare City
-- **1115inc**: Technology company at Al Warsan Towers, 305, Barsha Heights, Dubai
-  - Primary contact: ayshwarya@1115inc.com
-  - Secondary contact: consult@1115inc.com
+## Invoice Numbering Series
 
-## Invoice Numbering Series System
-
-### Architecture Overview
-The invoice numbering system provides flexible, multi-organization support with automatic series creation and comprehensive format pattern support.
-
-**Complete User Flow:**
-1. **User Registration** → Personal organization auto-created via Fortify/TeamServiceProvider
-2. **Organization Setup** → 4-step wizard for business configuration
-3. **Numbering Series** → Auto-created on first invoice OR manually managed
-4. **Invoice Creation** → Automatic series selection with manual override option
-
-### Key Components
-
-**Models:**
-- `InvoiceNumberingSeries` - Core model with reset logic and sequence management
-- Relationships: Organization (teams), Location, Invoice
-- Scopes: `active()`, `default()`, `forOrganization()`, `forLocation()`
-
-**Service Layer:**
-- `InvoiceNumberingService` - Business logic for number generation
-- Handles format pattern parsing, financial year integration, uniqueness validation
-- Transaction-safe number generation with automatic fallbacks
-
-**Management Interface:**
-- Route: `/numbering-series` → `NumberingSeriesManager` Livewire component
-- Full CRUD with real-time preview, security checks, default series management
-
-### Format Pattern Tokens
-```php
-{PREFIX}      // Series prefix (INV, EST, DXB-INV)
-{YEAR}        // Full year (2024)
-{YEAR:2}      // 2-digit year (24)
-{MONTH}       // Month number (01-12)
-{MONTH:3}     // Month abbreviation (Jan, Feb)
-{DAY}         // Day of month (01-31)
-{SEQUENCE}    // Sequential number
-{SEQUENCE:4}  // Padded sequence (0001, 0002)
-{FY}          // Financial year (2024-25)
-{FY_START}    // FY start year (2024)
-{FY_END}      // FY end year (2025)
-```
-
-### Reset Frequencies
-- `NEVER` - Continuous numbering (1, 2, 3, ...)
-- `YEARLY` - Reset every calendar year
-- `MONTHLY` - Reset every month  
-- `FINANCIAL_YEAR` - Reset based on organization's financial year
-
-### Series Selection Hierarchy
-1. **Specific series requested** → Use that series
-2. **Location provided** → Find location-specific active series
-3. **Fall back to default** → Use organization's default series
-4. **No default exists** → Create default series automatically
-
-### Database Schema
-```sql
-invoice_numbering_series:
-  - organization_id, location_id (nullable for org-wide)
-  - name, prefix, format_pattern
-  - current_number, reset_frequency
-  - is_active, is_default, last_reset_at
-```
-
-### Example Generated Numbers
-- Standard: `INV-2024-01-0001`
-- Financial Year: `INV-2024-25-0001`
-- Location-specific: `DXB-INV-2024-0001`
-- Simple: `EST-0001`
-
-### Financial Year Integration
-- Requires `organization.financial_year_type` and `country_code`
-- Automatic FY calculation based on current date
-- Validates FY setup for FY-based series and format patterns
-- Supports different country financial year systems
+Flexible numbering with format tokens (`{PREFIX}`, `{YEAR}`, `{SEQUENCE:4}`, `{FY}`, etc.), reset frequencies (never/yearly/monthly/financial_year), and per-organization/location series. Auto-created on first invoice if none exists. See `InvoiceNumberingService` and `InvoiceNumberingSeries` model for implementation details.
 
 ## Git Workflow
 - Always run all formatters before commit:
@@ -539,30 +476,6 @@ invoice_numbering_series:
   3. `sail bun run format` — Frontend (Prettier with Tailwind class sorting)
 - Always run tests for both (browser and unit) and make sure it passes before commit
 - Make atomic isolated commits regularly after each feature or atomic changes are done
-
-## Session Continuation Instructions
-
-**CRITICAL: At the start of EVERY session:**
-1. **Check PLAN.md first** - Review current progress and task status
-2. **Update PLAN.md checkboxes** as tasks are completed during the session
-3. **Follow PLAN.md phases** for browser test fixes (currently Phase 1: Authentication)
-4. **Reference PRD.md** for project requirements validation
-5. **Run test status check**: `sail php artisan test tests/Browser` to see current browser test state
-
-**Browser Test Status:**
-- **Framework**: Pest Browser (Playwright) - migrated from Dusk
-- **Tests**: 19 browser test files covering smoke, auth, CRUD, journeys, screenshots, accessibility
-
-**Before ending a session:**
-1. **Update PLAN.md** with all completed checkboxes and new discoveries
-2. **Commit progress** with atomic commits following git workflow
-3. **Run formatting**: `sail pint --dirty`
-4. **Note next session focus** in PLAN.md
-
-**Reference Documents:**
-- `PLAN.md` - Comprehensive browser test fix tracking
-- `PRD.md` - Project requirements (100% browser test target)
-- `tests/TestHelpers.php` - Data creation helper functions
 
 ===
 
@@ -595,6 +508,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - phpunit/phpunit (PHPUNIT) - v12
 - @inertiajs/vue3 (INERTIA_VUE) - v3
 - vue (VUE) - v3
+- @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
 - eslint (ESLINT) - v10
 - prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v4
