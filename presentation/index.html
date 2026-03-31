@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarity Invoicing - Product Demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  :root {
+    --brand: oklch(54.6% .245 262.881);
+    --brand-dark: oklch(42% .22 262.881);
+    --brand-light: oklch(95% .025 262.881);
+    --brand-mid: oklch(72% .14 262.881);
+    --accent: oklch(58% .16 160);
+    --accent-light: oklch(94% .04 160);
+    --warning: oklch(68% .16 75);
+    --warning-light: oklch(95% .04 85);
+    --danger: oklch(55% .22 27);
+    --dark: #111827;
+    --gray-700: #374151;
+    --gray-500: #6b7280;
+    --gray-300: #d1d5db;
+    --gray-100: #f3f4f6;
+  }
+
+  .reveal { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  .reveal h1, .reveal h2, .reveal h3 { color: var(--brand-dark); font-weight: 700; text-transform: none; letter-spacing: -0.5px; }
+  .reveal h1 { font-size: 2.4em; }
+  .reveal h2 { font-size: 1.6em; margin-bottom: 0.3em; }
+  .reveal h3 { font-size: 1.1em; color: var(--gray-700); }
+  .reveal p, .reveal li { color: var(--gray-700); font-size: 0.7em; line-height: 1.6; }
+  .reveal ul { list-style: none; padding: 0; }
+  .reveal ul li { position: relative; padding-left: 1.5em; margin-bottom: 0.4em; }
+  .reveal ul li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 8px; height: 8px; background: var(--brand); border-radius: 50%; }
+  .reveal .slides { text-align: left; }
+
+  /* Cover slide */
+  .cover-slide { background: linear-gradient(135deg, oklch(32% .22 262.881) 0%, var(--brand) 55%, var(--brand-mid) 100%) !important; }
+  .cover-slide h1, .cover-slide h2, .cover-slide p { color: white !important; text-align: center; }
+  .cover-slide h1 { font-size: 2.8em; margin-bottom: 0.1em; }
+  .cover-slide h2 { font-size: 1.3em; font-weight: 300; opacity: 0.9; }
+  .cover-slide .logo { height: 48px; filter: brightness(0) invert(1); margin-bottom: 20px; }
+  .cover-slide .divider { width: 80px; height: 3px; background: rgba(255,255,255,0.4); margin: 24px auto; border-radius: 2px; }
+  .cover-slide .meta { font-size: 0.65em !important; opacity: 0.7; text-align: center; }
+  .cover-slide .meta strong { color: white; }
+
+  /* Section dividers */
+  .section-slide { background: var(--brand-light) !important; }
+  .section-slide h2 { font-size: 2em; text-align: center; }
+  .section-slide p { text-align: center; font-size: 0.85em; }
+
+  /* Screenshot slides */
+  .screenshot { max-width: 85%; max-height: 480px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--gray-300); display: block; margin: 0 auto; }
+  .screenshot-sm { max-height: 400px; }
+  .screenshot-lg { max-width: 92%; max-height: 520px; }
+
+  /* Feature cards */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  .card-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 20px; }
+  .card { border: 1px solid var(--gray-300); border-radius: 10px; padding: 18px; background: white; }
+  .card h4 { font-size: 0.75em; font-weight: 700; color: var(--brand-dark); margin: 0 0 6px 0; }
+  .card p { font-size: 0.6em !important; margin: 0; }
+  .card.highlight { border-color: var(--brand); border-width: 2px; background: var(--brand-light); }
+  .card.accent { border-color: var(--accent); background: var(--accent-light); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.55em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-brand { background: var(--brand-light); color: var(--brand-dark); }
+  .badge-green { background: var(--accent-light); color: #065f46; }
+  .badge-amber { background: var(--warning-light); color: #92400e; }
+  .badge-red { background: oklch(93% .04 25); color: var(--danger); }
+
+  /* Stats row */
+  .stats { display: flex; gap: 20px; justify-content: center; margin: 24px 0; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 2em; font-weight: 700; color: var(--brand); display: block; }
+  .stat .label { font-size: 0.6em; color: var(--gray-500); }
+
+  /* Tech stack */
+  .tech-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; justify-content: center; }
+  .tech-tag { padding: 6px 14px; background: var(--brand-light); border: 1px solid var(--brand-mid); border-radius: 20px; font-size: 0.6em; font-weight: 600; color: var(--brand-dark); }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; }
+  .two-col-text h3 { margin-top: 0; }
+  .two-col img { max-height: 420px; }
+
+  /* Footer on every slide */
+  .slide-footer { position: absolute; bottom: 12px; left: 40px; display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--gray-500); }
+  .slide-footer img { height: 14px; opacity: 0.4; }
+
+  /* Comparison screenshots */
+  .screenshot-row { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+  .screenshot-row img { max-height: 360px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1px solid var(--gray-300); }
+
+  /* Flow */
+  .flow { display: flex; align-items: center; gap: 0; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+  .flow-step { background: var(--brand-light); border: 2px solid var(--brand); border-radius: 10px; padding: 12px 18px; text-align: center; font-size: 0.65em; font-weight: 600; color: var(--brand-dark); min-width: 120px; }
+  .flow-step small { display: block; font-weight: 400; font-size: 0.85em; color: var(--gray-500); margin-top: 2px; }
+  .flow-arrow { font-size: 1.4em; color: var(--brand); padding: 0 8px; font-weight: 700; }
+  .flow-step.green { background: var(--accent-light); border-color: var(--accent); color: #065f46; }
+
+  /* End slide */
+  .end-slide { background: linear-gradient(135deg, oklch(32% .22 262.881) 0%, var(--brand) 55%, var(--brand-mid) 100%) !important; }
+  .end-slide h2, .end-slide p { color: white !important; text-align: center; }
+  .end-slide .logo { height: 40px; filter: brightness(0) invert(1); }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================ -->
+<!-- SLIDE 1: COVER -->
+<!-- ============================================ -->
+<section class="cover-slide" data-background-color="">
+  <img src="clarity-Logo.png" alt="Clarity" class="logo"><br>
+  <h1>Clarity Invoicing</h1>
+  <h2>Modern Multi-Currency Invoicing Platform</h2>
+  <div class="divider"></div>
+  <p class="meta">
+    Built by <strong>Clarity Technologies</strong><br>
+    March 2026<br><br>
+    <span class="tech-grid" style="justify-content:center">
+      <span class="tech-tag" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">Laravel 13</span>
+      <span class="tech-tag" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">Vue 3 + Inertia v3</span>
+      <span class="tech-tag" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">FrankenPHP + Octane</span>
+      <span class="tech-tag" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">TypeScript</span>
+      <span class="tech-tag" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">PostgreSQL</span>
+    </span>
+  </p>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 2: WHAT IS IT -->
+<!-- ============================================ -->
+<section>
+  <h2>What is Clarity Invoicing?</h2>
+  <p style="font-size:0.85em; max-width:800px;">A full-featured invoicing platform for businesses operating across multiple countries and currencies. Create professional invoices and estimates, manage customers, track payments, and generate PDFs — all from a clean, modern interface.</p>
+
+  <div class="stats">
+    <div class="stat"><span class="num">9</span><span class="label">Currencies Supported</span></div>
+    <div class="stat"><span class="num">4</span><span class="label">Step Org Setup</span></div>
+    <div class="stat"><span class="num">996</span><span class="label">Total Tests</span></div>
+    <div class="stat"><span class="num">0</span><span class="label">Failures</span></div>
+  </div>
+
+  <div class="card-grid-3">
+    <div class="card highlight">
+      <h4>Multi-Currency</h4>
+      <p>INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED with country-specific tax templates</p>
+    </div>
+    <div class="card">
+      <h4>PDF Generation</h4>
+      <p>Professional A4 invoices via Gotenberg (MIT, purpose-built) with automatic tax calculations</p>
+    </div>
+    <div class="card accent">
+      <h4>Public Sharing</h4>
+      <p>Share invoices via unique ULID links — no login required for clients</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 3: TECH STACK -->
+<!-- ============================================ -->
+<section>
+  <h2>Technology Stack</h2>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Backend</h4>
+      <ul>
+        <li>PHP 8.5 + Laravel 13</li>
+        <li>Laravel Octane + FrankenPHP</li>
+        <li>PostgreSQL 17</li>
+        <li>Valkey (Redis alternative)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Frontend</h4>
+      <ul>
+        <li>Vue 3 + Inertia.js v3 (beta)</li>
+        <li>TypeScript (100% — 39 Vue + 104 .ts files)</li>
+        <li>Tailwind CSS v4 + Vite 8 + Bun</li>
+        <li>Wayfinder (type-safe routes)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Infrastructure</h4>
+      <ul>
+        <li>Docker — Laravel Sail (dev)</li>
+        <li>ServerSideUp FrankenPHP + Octane (prod)</li>
+        <li>Gotenberg 8 (PDF generation)</li>
+        <li>GitHub Actions CI/CD (6 jobs)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Testing (996 tests, 0 failures)</h4>
+      <ul>
+        <li>Pest 4 — 893 backend tests</li>
+        <li>Pest Browser + Playwright — 103 browser tests</li>
+        <li>Production Docker image testing</li>
+        <li>Vitest for frontend unit tests</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: USER STORIES -->
+<!-- ============================================ -->
+<section class="section-slide">
+  <h2>User Stories & Features</h2>
+  <p>A walkthrough of every major feature with real screenshots</p>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: AUTHENTICATION -->
+<!-- ============================================ -->
+<section>
+  <h2>1. Authentication</h2>
+  <p>Secure login with email/password, registration with email verification, password reset, and two-factor authentication (TOTP).</p>
+  <div class="screenshot-row">
+    <img src="login.png" alt="Login" class="screenshot-sm">
+    <img src="register.png" alt="Register" class="screenshot-sm">
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: ORG SETUP WIZARD -->
+<!-- ============================================ -->
+<section>
+  <h2>2. Organization Setup Wizard</h2>
+  <p>After registration, a 4-step guided wizard configures the business: company info, primary location, currency & tax settings, and contact details.</p>
+  <div class="flow">
+    <div class="flow-step">Company Info<small>Name, Tax #, Website</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Primary Location<small>Address, City, Country</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Configuration<small>Currency, Financial Year</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step green">Contact Details<small>Email, Phone</small></div>
+  </div>
+  <img src="setup-step1-filled.png" alt="Setup Wizard Step 1" class="screenshot" style="max-height:340px">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: SETUP STEPS 2-4 -->
+<!-- ============================================ -->
+<section>
+  <h2>2. Setup Wizard (continued)</h2>
+  <div class="screenshot-row">
+    <img src="setup-step2.png" alt="Step 2 - Location" class="screenshot-sm" style="max-height:300px">
+    <img src="setup-step3.png" alt="Step 3 - Config" class="screenshot-sm" style="max-height:300px">
+    <img src="setup-step4.png" alt="Step 4 - Contacts" class="screenshot-sm" style="max-height:300px">
+  </div>
+  <div style="text-align:center; margin-top:16px;">
+    <span class="badge badge-brand">Multi-Country</span>
+    <span class="badge badge-green">India GST</span>
+    <span class="badge badge-amber">UAE VAT</span>
+    <span class="badge badge-brand">US Sales Tax</span>
+    <span class="badge badge-brand">EU VAT</span>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: DASHBOARD -->
+<!-- ============================================ -->
+<section>
+  <h2>3. Dashboard</h2>
+  <p>Business overview with total invoiced, collected, outstanding amounts, invoice status breakdown, 6-month trend chart, top customers, overdue invoices, and recent activity.</p>
+  <img src="dashboard.png" alt="Dashboard" class="screenshot screenshot-lg">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: ORGANIZATION MANAGEMENT -->
+<!-- ============================================ -->
+<section>
+  <h2>4. Organization Management</h2>
+  <p>Manage business details across multiple tabs: basics, location, bank details, and contacts. Support for multiple locations per organization.</p>
+  <div class="screenshot-row">
+    <img src="organizations.png" alt="Organizations" class="screenshot-sm" style="max-height:350px">
+    <img src="org-edit.png" alt="Edit Organization" class="screenshot-sm" style="max-height:350px">
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: CUSTOMER MANAGEMENT -->
+<!-- ============================================ -->
+<section>
+  <h2>5. Customer Management</h2>
+  <p>Full CRUD for customers with multiple contacts, multi-currency support, location management, and search/filter. Customers with existing invoices are protected from deletion.</p>
+  <img src="customers.png" alt="Customers" class="screenshot">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: INVOICE CREATION -->
+<!-- ============================================ -->
+<section>
+  <h2>6. Invoice Creation</h2>
+  <p>Create invoices with line items, automatic tax calculations, customer selection with auto-populated locations, and real-time total preview.</p>
+  <img src="invoice-create.png" alt="Create Invoice" class="screenshot">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: INVOICE EDITING -->
+<!-- ============================================ -->
+<section>
+  <h2>6. Invoice Editing & Actions</h2>
+  <p>Edit existing invoices, send via email with PDF attachment, download PDF, view public link, duplicate, and mark as paid.</p>
+  <img src="invoice-edit.png" alt="Edit Invoice" class="screenshot">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: ESTIMATES -->
+<!-- ============================================ -->
+<section>
+  <h2>7. Estimates</h2>
+  <p>Create estimates with the same powerful form as invoices. One-click conversion from estimate to invoice preserves all data.</p>
+  <div class="screenshot-row">
+    <img src="estimate-create.png" alt="Create Estimate" class="screenshot-sm" style="max-height:350px">
+    <img src="estimate-edit.png" alt="Edit Estimate" class="screenshot-sm" style="max-height:350px">
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: PUBLIC VIEWS -->
+<!-- ============================================ -->
+<section>
+  <h2>8. Public Invoice & Estimate Views</h2>
+  <p>Professional, shareable document views accessible via unique ULID links without authentication. Clients can view and print directly from the browser.</p>
+  <div class="screenshot-row">
+    <img src="public-invoice.png" alt="Public Invoice" class="screenshot-sm" style="max-height:340px">
+    <img src="public-invoice-paid.png" alt="Paid Invoice" class="screenshot-sm" style="max-height:340px">
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: PUBLIC VIEW STATES -->
+<!-- ============================================ -->
+<section>
+  <h2>8. Invoice Status Indicators</h2>
+  <p>Public views show clear status badges: draft, sent, paid, overdue. Overdue invoices display prominently with the amount due.</p>
+  <div class="screenshot-row">
+    <img src="public-invoice-overdue.png" alt="Overdue Invoice" class="screenshot-sm" style="max-height:380px">
+    <img src="public-estimate.png" alt="Public Estimate" class="screenshot-sm" style="max-height:380px">
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: NUMBERING SERIES -->
+<!-- ============================================ -->
+<section>
+  <h2>9. Invoice Numbering Series</h2>
+  <p>Flexible numbering system with format tokens ({PREFIX}, {YEAR}, {SEQUENCE:4}, {FY}), reset frequencies (never, monthly, yearly, financial year), location-specific series, and automatic fallback to defaults.</p>
+  <img src="numbering-series.png" alt="Numbering Series" class="screenshot">
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: PDF GENERATION -->
+<!-- ============================================ -->
+<section>
+  <h2>10. PDF Generation</h2>
+  <p>Professional A4 PDFs generated via Gotenberg with full Chromium rendering. Supports organization logos, tax breakdowns, and multi-currency formatting.</p>
+  <div class="flow">
+    <div class="flow-step">Blade Template<small>HTML + Tailwind CSS</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Gotenberg API<small>POST /forms/chromium/convert/html</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step green">A4 PDF<small>Download or Email</small></div>
+  </div>
+  <div class="card-grid-3" style="margin-top:20px">
+    <div class="card">
+      <h4>Tax Calculations</h4>
+      <p>GST (CGST+SGST/IGST), VAT, Sales Tax with automatic breakdowns</p>
+    </div>
+    <div class="card">
+      <h4>Email Delivery</h4>
+      <p>Send invoices with PDF attachments to multiple recipients</p>
+    </div>
+    <div class="card">
+      <h4>Amount in Words</h4>
+      <p>Automatic conversion: "Indian Rupee One Hundred Thousand Three Hundred Only"</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: MULTI-CURRENCY -->
+<!-- ============================================ -->
+<section>
+  <h2>11. Multi-Currency & Tax System</h2>
+  <div class="card-grid">
+    <div class="card highlight">
+      <h4>9 Currencies</h4>
+      <p>INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED — each with proper symbol and formatting</p>
+    </div>
+    <div class="card">
+      <h4>Country Tax Templates</h4>
+      <p>Pre-configured templates per currency: India GST (5/12/18/28%), UAE VAT (5%), US Sales Tax, EU VAT</p>
+    </div>
+    <div class="card">
+      <h4>Financial Year Support</h4>
+      <p>Country-specific FY (India: Apr-Mar, US: Jan-Dec) for invoice numbering reset</p>
+    </div>
+    <div class="card accent">
+      <h4>Integer Storage</h4>
+      <p>All monetary values stored in cents (integer) — zero floating-point precision issues</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: ARCHITECTURE -->
+<!-- ============================================ -->
+<section class="section-slide">
+  <h2>Architecture & Infrastructure</h2>
+  <p>Production-grade deployment with Docker</p>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: ARCHITECTURE -->
+<!-- ============================================ -->
+<section>
+  <h2>Application Architecture</h2>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Domain-Driven Design</h4>
+      <ul>
+        <li>Value Objects (ContactCollection, InvoiceTotals)</li>
+        <li>Service Layer (InvoiceCalculator, PdfService)</li>
+        <li>Rich domain models with business methods</li>
+        <li>Custom casts for JSON columns</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Multi-Tenant Data Model</h4>
+      <ul>
+        <li>Organization-centric (teams renamed to orgs)</li>
+        <li>Polymorphic Location model</li>
+        <li>ULID identifiers for public sharing</li>
+        <li>OrganizationScope for data isolation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Frontend (SPA)</h4>
+      <ul>
+        <li>Inertia.js v3 (no API layer needed)</li>
+        <li>Vue 3 Composition API + TypeScript</li>
+        <li>Wayfinder for type-safe route references</li>
+        <li>Real-time calculations in forms</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Docker Infrastructure</h4>
+      <ul>
+        <li>Dev: Laravel Sail (7 services)</li>
+        <li>Prod: ServerSideUp FrankenPHP + Octane</li>
+        <li>Gotenberg for PDF generation</li>
+        <li>Production image testing in CI</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: DEPLOYMENT -->
+<!-- ============================================ -->
+<section>
+  <h2>Production Deployment</h2>
+  <div class="flow">
+    <div class="flow-step">Push to main<small>GitHub</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">CI Pipeline<small>Lint + Test + Build</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Docker Build<small>Multi-stage FrankenPHP</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step green">Deploy<small>Container Registry</small></div>
+  </div>
+  <div class="card-grid-3" style="margin-top:24px">
+    <div class="card">
+      <h4>CI Pipeline (6 parallel jobs)</h4>
+      <p>Lint (Pint + TS), 893 PHP tests, 103 browser tests, Vitest, frontend build check, production image test</p>
+    </div>
+    <div class="card">
+      <h4>Production Image</h4>
+      <p>3-stage build: PHP deps &rarr; Bun frontend &rarr; ServerSideUp FrankenPHP with autorun (migrate, optimize, storage:link)</p>
+    </div>
+    <div class="card highlight">
+      <h4>Production Testing</h4>
+      <p>Builds the actual Docker image and runs all browser tests against it to catch Octane-specific issues</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: TESTING -->
+<!-- ============================================ -->
+<section>
+  <h2>Testing Strategy</h2>
+  <div class="stats">
+    <div class="stat"><span class="num">893</span><span class="label">Backend Tests</span></div>
+    <div class="stat"><span class="num">103</span><span class="label">Browser Tests</span></div>
+    <div class="stat"><span class="num">996</span><span class="label">Total (0 failures)</span></div>
+    <div class="stat"><span class="num">50s</span><span class="label">Browser Suite Time</span></div>
+  </div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Unit & Feature Tests (Pest 4)</h4>
+      <p>Model logic, service layer, API endpoints, authorization policies, value objects, custom casts, PDF generation mocks</p>
+    </div>
+    <div class="card">
+      <h4>Browser Tests (Pest Browser + Playwright)</h4>
+      <p>Full CRUD flows, smoke tests on every page, authentication journeys, public view rendering, JS error detection</p>
+    </div>
+    <div class="card accent">
+      <h4>Production Image Tests</h4>
+      <p>Builds the FrankenPHP Docker image and runs browser tests against it — catches singleton leaks and Docker config issues</p>
+    </div>
+    <div class="card">
+      <h4>Screenshot Tests</h4>
+      <p>Demo and journey screenshots auto-captured during test runs for visual regression and documentation</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: SUMMARY -->
+<!-- ============================================ -->
+<section>
+  <h2>Feature Summary</h2>
+  <div class="card-grid-3">
+    <div class="card highlight">
+      <h4>Invoicing</h4>
+      <p>Create, edit, duplicate, delete invoices with multi-item support and automatic calculations</p>
+    </div>
+    <div class="card">
+      <h4>Estimates</h4>
+      <p>Full estimate lifecycle with one-click conversion to invoice</p>
+    </div>
+    <div class="card">
+      <h4>PDF & Email</h4>
+      <p>Professional A4 PDFs via Gotenberg, email delivery with attachments</p>
+    </div>
+    <div class="card">
+      <h4>Public Sharing</h4>
+      <p>ULID-based links for client access without login</p>
+    </div>
+    <div class="card accent">
+      <h4>Multi-Currency</h4>
+      <p>9 currencies, country-specific tax templates, financial year support</p>
+    </div>
+    <div class="card">
+      <h4>Org Management</h4>
+      <p>Multi-location organizations with bank details and contacts</p>
+    </div>
+    <div class="card">
+      <h4>Customer CRM</h4>
+      <p>Customers with multiple contacts, locations, and currency preferences</p>
+    </div>
+    <div class="card">
+      <h4>Numbering Series</h4>
+      <p>Flexible format patterns with auto-reset and FY integration</p>
+    </div>
+    <div class="card highlight">
+      <h4>Production Ready</h4>
+      <p>Docker + CI/CD + 100% test pass rate + production image testing</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE: END -->
+<!-- ============================================ -->
+<section class="end-slide">
+  <img src="clarity-Logo.png" alt="Clarity" class="logo"><br><br>
+  <h2>Thank You</h2>
+  <p style="font-size:0.9em; opacity:0.8;">Clarity Invoicing</p>
+  <p style="font-size:0.65em; opacity:0.6; margin-top:30px;">
+    Open Source &bull; Laravel 13 &bull; Vue 3 + Inertia v3 &bull; TypeScript &bull; FrankenPHP<br>
+    Built by Clarity Technologies
+  </p>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    center: false,
+    controls: true,
+    progress: true,
+  });
+</script>
+</body>
+</html>
