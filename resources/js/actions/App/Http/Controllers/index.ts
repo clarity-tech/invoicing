@@ -13,6 +13,7 @@ import OrganizationController from './OrganizationController'
 import CustomerController from './CustomerController'
 import InvoiceController from './InvoiceController'
 import NumberingSeriesController from './NumberingSeriesController'
+import SettingsController from './SettingsController'
 import EmailTemplateController from './EmailTemplateController'
 
 const Controllers = {
@@ -31,6 +32,7 @@ const Controllers = {
     CustomerController: Object.assign(CustomerController, CustomerController),
     InvoiceController: Object.assign(InvoiceController, InvoiceController),
     NumberingSeriesController: Object.assign(NumberingSeriesController, NumberingSeriesController),
+    SettingsController: Object.assign(SettingsController, SettingsController),
     EmailTemplateController: Object.assign(EmailTemplateController, EmailTemplateController),
 }
 
