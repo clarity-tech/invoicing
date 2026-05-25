@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 test('can create organization with required fields', function () {
     $user = User::factory()->create();
@@ -1002,4 +1003,25 @@ test('logoBase64 returns null when no logo uploaded', function () {
     $organization = createOrganizationWithLocation();
 
     expect($organization->logo_base64)->toBeNull();
+});
+
+test('logoBase64 reads from configured media disk (not local filesystem)', function () {
+    config(['media-library.disk_name' => 'public']);
+    Storage::fake('public');
+
+    $organization = createOrganizationWithLocation();
+
+    $pngBytes = base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+    );
+
+    $organization
+        ->addMediaFromString($pngBytes)
+        ->usingFileName('logo.png')
+        ->toMediaCollection('logo');
+
+    $base64 = $organization->fresh()->logo_base64;
+
+    expect($base64)->toStartWith('data:image/png;base64,')
+        ->and(base64_decode(substr($base64, strlen('data:image/png;base64,'))))->toBe($pngBytes);
 });
