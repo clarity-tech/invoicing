@@ -32,7 +32,6 @@ class ProductionUserSeeder extends Seeder
         $clarityOrg = Organization::create([
             'name' => 'Clarity Technologies',
             'user_id' => $clarityOwner->id,
-            'personal_team' => false,
             'company_name' => 'Clarity Technologies',
             'tax_number' => '18ASBPB0118P1ZX',
             'registration_number' => 'U74999AS2020PTC009876',
