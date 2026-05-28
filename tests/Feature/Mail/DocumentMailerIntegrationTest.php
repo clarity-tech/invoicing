@@ -5,6 +5,7 @@ use App\Mail\DocumentMailer;
 use App\ValueObjects\ContactCollection;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Support\Facades\Storage;
 
 // --- CC recipients tests ---
 
@@ -223,6 +224,71 @@ test('queued mailable with pdf attachment serializes without utf8 error', functi
 });
 
 // --- Full construction with all parameters ---
+
+test('attachments include extra files from storage when provided', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('email-attachments/test/contract.pdf', 'fake-contract');
+
+    $invoice = createInvoiceWithItems([
+        'invoice_number' => 'INV-EXTRA-001',
+        'status' => 'sent',
+    ]);
+
+    $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
+
+    $mailer = new DocumentMailer(
+        $invoice,
+        $recipients,
+        null,
+        [],
+        null,
+        false,
+        [[
+            'disk' => 'local',
+            'path' => 'email-attachments/test/contract.pdf',
+            'name' => 'contract.pdf',
+            'mime' => 'application/pdf',
+        ]],
+    );
+
+    $attachments = $mailer->attachments();
+
+    expect($attachments)->toHaveCount(1)
+        ->and($attachments[0])->toBeInstanceOf(Attachment::class);
+});
+
+test('attachments include both pdf and extra files when both are set', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('email-attachments/test/notes.txt', 'notes');
+
+    $this->mock(PdfServiceInterface::class, function ($mock) {
+        $mock->shouldReceive('generateInvoicePdf')->once()->andReturn('pdf-bytes');
+    });
+
+    $invoice = createInvoiceWithItems([
+        'invoice_number' => 'INV-BOTH-001',
+        'status' => 'sent',
+    ]);
+
+    $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
+
+    $mailer = new DocumentMailer(
+        $invoice,
+        $recipients,
+        null,
+        [],
+        null,
+        true,
+        [[
+            'disk' => 'local',
+            'path' => 'email-attachments/test/notes.txt',
+            'name' => 'notes.txt',
+            'mime' => 'text/plain',
+        ]],
+    );
+
+    expect($mailer->attachments())->toHaveCount(2);
+});
 
 test('accepts all constructor parameters', function () {
     $invoice = createInvoiceWithItems([

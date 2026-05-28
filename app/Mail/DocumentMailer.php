@@ -19,6 +19,9 @@ class DocumentMailer extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    /**
+     * @param  array<int, array{disk: string, path: string, name: string, mime: string}>  $extraAttachments
+     */
     public function __construct(
         public Invoice $invoice,
         public ContactCollection $recipients,
@@ -26,6 +29,7 @@ class DocumentMailer extends Mailable implements ShouldQueue
         public array $ccEmails = [],
         public ?string $customBody = null,
         public bool $attachPdf = false,
+        public array $extraAttachments = [],
     ) {}
 
     public function envelope(): Envelope
@@ -61,21 +65,27 @@ class DocumentMailer extends Mailable implements ShouldQueue
 
     public function attachments(): array
     {
-        if (! $this->attachPdf) {
-            return [];
+        $attachments = [];
+
+        if ($this->attachPdf) {
+            $pdfService = app(PdfServiceInterface::class);
+            $invoice = $this->invoice;
+
+            $pdf = $invoice->isInvoice()
+                ? $pdfService->generateInvoicePdf($invoice)
+                : $pdfService->generateEstimatePdf($invoice);
+
+            $attachments[] = Attachment::fromData(fn () => $pdf, "{$invoice->invoice_number}.pdf")
+                ->withMime('application/pdf');
         }
 
-        $pdfService = app(PdfServiceInterface::class);
-        $invoice = $this->invoice;
+        foreach ($this->extraAttachments as $file) {
+            $attachments[] = Attachment::fromStorageDisk($file['disk'], $file['path'])
+                ->as($file['name'])
+                ->withMime($file['mime']);
+        }
 
-        $pdf = $invoice->isInvoice()
-            ? $pdfService->generateInvoicePdf($invoice)
-            : $pdfService->generateEstimatePdf($invoice);
-
-        return [
-            Attachment::fromData(fn () => $pdf, "{$invoice->invoice_number}.pdf")
-                ->withMime('application/pdf'),
-        ];
+        return $attachments;
     }
 
     private function resolveDefaultBody(): string
