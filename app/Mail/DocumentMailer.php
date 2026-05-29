@@ -30,6 +30,7 @@ class DocumentMailer extends Mailable implements ShouldQueue
         public ?string $customBody = null,
         public bool $attachPdf = false,
         public array $extraAttachments = [],
+        public bool $includeViewOnlineButton = true,
     ) {}
 
     public function envelope(): Envelope
@@ -59,6 +60,7 @@ class DocumentMailer extends Mailable implements ShouldQueue
                 'customBody' => $body,
                 'invoice' => $this->invoice,
                 'viewUrl' => $this->getPublicViewUrl(),
+                'includeViewOnlineButton' => $this->includeViewOnlineButton,
             ],
         );
     }

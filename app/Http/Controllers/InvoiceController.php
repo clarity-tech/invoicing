@@ -419,6 +419,7 @@ class InvoiceController extends Controller
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
             'attach_pdf' => ['boolean'],
+            'include_view_online_button' => ['boolean'],
             'attachments' => ['nullable', 'array', 'max:10'],
             'attachments.*' => [
                 'file',
@@ -458,6 +459,7 @@ class InvoiceController extends Controller
             $validated['body'],
             (bool) ($validated['attach_pdf'] ?? false),
             $extraAttachments,
+            (bool) ($validated['include_view_online_button'] ?? true),
         );
 
         Mail::send($mailable);

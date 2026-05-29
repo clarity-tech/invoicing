@@ -98,11 +98,13 @@
     <div class="email-container">
         <div class="email-body">{!! $customBody !!}</div>
 
-        <div style="text-align: center;">
-            <a href="{{ $viewUrl }}" class="cta-button">
-                View {{ ucfirst($invoice->type) }} Online
-            </a>
-        </div>
+        @if($includeViewOnlineButton)
+            <div style="text-align: center;">
+                <a href="{{ $viewUrl }}" class="cta-button">
+                    View {{ ucfirst($invoice->type) }} Online
+                </a>
+            </div>
+        @endif
 
         <div class="footer">
             @if($invoice->organization)

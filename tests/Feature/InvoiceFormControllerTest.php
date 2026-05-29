@@ -340,6 +340,33 @@ test('send email rejects unsupported mime types', function () {
     ])->assertSessionHasErrors('attachments.0');
 });
 
+test('send email defaults include_view_online_button to true when omitted', function () {
+    Mail::fake();
+    $invoice = createInvoiceWithItems([], null, $this->organization, $this->customer);
+
+    $this->post(route('invoices.send-email', $invoice->id), [
+        'recipients' => ['test@example.test'],
+        'subject' => 'Test',
+        'body' => 'Body',
+    ])->assertRedirect();
+
+    Mail::assertQueued(DocumentMailer::class, fn (DocumentMailer $m) => $m->includeViewOnlineButton === true);
+});
+
+test('send email forwards include_view_online_button=false to the mailer', function () {
+    Mail::fake();
+    $invoice = createInvoiceWithItems([], null, $this->organization, $this->customer);
+
+    $this->post(route('invoices.send-email', $invoice->id), [
+        'recipients' => ['test@example.test'],
+        'subject' => 'Test',
+        'body' => 'Body',
+        'include_view_online_button' => false,
+    ])->assertRedirect();
+
+    Mail::assertQueued(DocumentMailer::class, fn (DocumentMailer $m) => $m->includeViewOnlineButton === false);
+});
+
 test('send email rejects when combined attachment size exceeds the cap', function () {
     Storage::fake(config('filesystems.default'));
     $invoice = createInvoiceWithItems([], null, $this->organization, $this->customer);

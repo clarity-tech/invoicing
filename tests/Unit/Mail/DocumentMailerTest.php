@@ -132,6 +132,34 @@ test('document mailer passes correct data to view', function () {
     expect($content->with['viewUrl'])->toBeString();
 });
 
+test('document mailer defaults the view-online button to enabled', function () {
+    $invoice = createInvoiceWithItems(['invoice_number' => 'INV-CTA-DEFAULT']);
+    $mailer = new DocumentMailer($invoice, new ContactCollection([['name' => 'R', 'email' => 'r@test.com']]));
+
+    $content = $mailer->content();
+
+    expect($content->with)->toHaveKey('includeViewOnlineButton');
+    expect($content->with['includeViewOnlineButton'])->toBeTrue();
+});
+
+test('document mailer propagates includeViewOnlineButton=false to the view', function () {
+    $invoice = createInvoiceWithItems(['invoice_number' => 'INV-CTA-OFF']);
+    $mailer = new DocumentMailer(
+        $invoice,
+        new ContactCollection([['name' => 'R', 'email' => 'r@test.com']]),
+        null,
+        [],
+        null,
+        false,
+        [],
+        false,
+    );
+
+    $content = $mailer->content();
+
+    expect($content->with['includeViewOnlineButton'])->toBeFalse();
+});
+
 test('document mailer handles different recipient emails', function () {
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'INV-007',

@@ -52,6 +52,7 @@ const form = useForm({
     subject: '',
     body: '',
     attach_pdf: true,
+    include_view_online_button: true,
     attachments: [] as File[],
 });
 
@@ -188,6 +189,7 @@ watch(
             form.recipients = [...customerEmails.value];
             form.cc = [...orgEmails.value];
             form.attach_pdf = true;
+            form.include_view_online_button = true;
             form.attachments = [];
             form.clearErrors();
             newToEmail.value = '';
@@ -455,6 +457,36 @@ function send() {
                     >
                         {{ form.errors.body }}
                     </p>
+                </div>
+
+                <!-- Options -->
+                <div class="mb-4 border-t pt-4">
+                    <h3 class="mb-3 text-sm font-semibold text-gray-700">
+                        Options
+                    </h3>
+                    <label
+                        class="flex cursor-pointer items-center rounded-md p-3 hover:bg-gray-50"
+                    >
+                        <input
+                            v-model="form.include_view_online_button"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                        />
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-gray-900">
+                                Include "View
+                                {{
+                                    invoice.type === 'estimate'
+                                        ? 'Estimate'
+                                        : 'Invoice'
+                                }}
+                                Online" button
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Adds a CTA linking to the public document page
+                            </div>
+                        </div>
+                    </label>
                 </div>
 
                 <!-- Attachments -->
