@@ -38,6 +38,9 @@ class CustomerController extends Controller
 
     public function store(StoreCustomerRequest $request): RedirectResponse
     {
+        $organization = $request->user()->currentTeam;
+        abort_unless($organization, 403, __('messages.authorization.no_organization_context'));
+
         $validated = $request->validated();
 
         $filteredContacts = array_filter($validated['contacts'], fn ($c) => ! empty(trim($c['email'])));
@@ -51,7 +54,7 @@ class CustomerController extends Controller
             'phone' => $validated['phone'] ?? null,
             'currency' => $validated['currency'],
             'emails' => new ContactCollection($filteredContacts),
-            'organization_id' => $request->user()->currentTeam->id,
+            'organization_id' => $organization->id,
         ]);
 
         return back()->with('success', __('messages.notifications.customer_created_add_location'));
@@ -79,7 +82,7 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        $this->authorizeCustomer($customer, 'delete');
 
         $customer->delete();
 
@@ -261,10 +264,10 @@ class CustomerController extends Controller
         return back()->with('success', __('messages.notifications.primary_location_updated'));
     }
 
-    private function authorizeCustomer(Customer $customer): void
+    private function authorizeCustomer(Customer $customer, string $ability = 'update'): void
     {
         abort_unless(
-            auth()->user()->allTeams()->contains('id', $customer->organization_id),
+            auth()->user()->can($ability, $customer),
             403
         );
     }

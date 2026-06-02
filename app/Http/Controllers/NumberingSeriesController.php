@@ -51,9 +51,10 @@ class NumberingSeriesController extends Controller
             'is_default' => ['boolean'],
         ]);
 
-        // Authorization: user must have access to the organization
+        // Authorization: only owners/admins (manage) may create numbering series.
+        $targetOrganization = Organization::findOrFail($validated['organization_id']);
         abort_unless(
-            $request->user()->allTeams()->contains('id', $validated['organization_id']),
+            $request->user()->hasTeamPermission($targetOrganization, 'manage'),
             403
         );
 
