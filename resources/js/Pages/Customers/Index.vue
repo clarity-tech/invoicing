@@ -553,8 +553,9 @@ function locationSummary(customer: Customer): string {
                                             <div class="flex gap-2">
                                                 <button
                                                     v-if="
+                                                        can('update') &&
                                                         customer.primary_location_id !==
-                                                        loc.id
+                                                            loc.id
                                                     "
                                                     type="button"
                                                     class="cursor-pointer text-xs text-brand-600 hover:text-brand-900"
@@ -568,6 +569,7 @@ function locationSummary(customer: Customer): string {
                                                     Set Primary
                                                 </button>
                                                 <button
+                                                    v-if="can('update')"
                                                     type="button"
                                                     class="cursor-pointer text-xs text-brand-600 hover:text-brand-900"
                                                     @click="
@@ -580,6 +582,7 @@ function locationSummary(customer: Customer): string {
                                                     Edit
                                                 </button>
                                                 <button
+                                                    v-if="can('delete')"
                                                     type="button"
                                                     class="cursor-pointer text-xs text-red-600 hover:text-red-900"
                                                     @click="
@@ -635,6 +638,7 @@ function locationSummary(customer: Customer): string {
                                             </div>
                                             <div class="flex gap-2">
                                                 <button
+                                                    v-if="can('update')"
                                                     type="button"
                                                     class="cursor-pointer text-xs text-brand-600 hover:text-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
                                                     :disabled="
@@ -656,6 +660,7 @@ function locationSummary(customer: Customer): string {
                                                     }}
                                                 </button>
                                                 <button
+                                                    v-if="can('delete')"
                                                     type="button"
                                                     class="cursor-pointer text-xs text-red-600 hover:text-red-900"
                                                     @click="
