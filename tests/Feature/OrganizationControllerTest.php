@@ -32,6 +32,8 @@ test('can render organization show page', function () {
     $response->assertInertia(fn ($page) => $page
         ->component('Organizations/Show')
         ->has('organization')
+        ->where('taxLabels.IN', 'GSTIN')
+        ->where('taxLabels.US', 'EIN')
     );
 });
 
@@ -154,7 +156,7 @@ test('can update organization location', function () {
 
     $response = $this->put("/organizations/{$organization->id}/location", [
         'location_name' => 'New Office',
-        'gstin' => 'NEWGSTIN123',
+        'tax_id' => 'NEWGSTIN123',
         'address_line_1' => '456 New St',
         'address_line_2' => 'Suite 200',
         'city' => 'New City',
@@ -168,7 +170,7 @@ test('can update organization location', function () {
     $organization->refresh();
     $location = $organization->primaryLocation;
     expect($location->name)->toBe('New Office');
-    expect($location->gstin)->toBe('NEWGSTIN123');
+    expect($location->tax_id)->toBe('NEWGSTIN123');
     expect($location->address_line_1)->toBe('456 New St');
     expect($location->city)->toBe('New City');
 });

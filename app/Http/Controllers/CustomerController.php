@@ -142,7 +142,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'gstin' => ['nullable', 'string', 'max:50'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
             'address_line_1' => ['required', 'string', 'max:500'],
             'address_line_2' => ['nullable', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:100'],
@@ -153,7 +153,7 @@ class CustomerController extends Controller
 
         $location = Location::create([
             'name' => $validated['name'],
-            'gstin' => ($validated['gstin'] ?? null) ?: null,
+            'tax_id' => ($validated['tax_id'] ?? null) ?: null,
             'address_line_1' => $validated['address_line_1'],
             'address_line_2' => ($validated['address_line_2'] ?? null) ?: null,
             'city' => $validated['city'],
@@ -179,7 +179,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'gstin' => ['nullable', 'string', 'max:50'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
             'address_line_1' => ['required', 'string', 'max:500'],
             'address_line_2' => ['nullable', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:100'],
@@ -190,7 +190,7 @@ class CustomerController extends Controller
 
         $location->update([
             'name' => $validated['name'],
-            'gstin' => ($validated['gstin'] ?? null) ?: null,
+            'tax_id' => ($validated['tax_id'] ?? null) ?: null,
             'address_line_1' => $validated['address_line_1'],
             'address_line_2' => ($validated['address_line_2'] ?? null) ?: null,
             'city' => $validated['city'],
