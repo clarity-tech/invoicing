@@ -22,6 +22,8 @@ class CustomerController extends Controller
 {
     public function index(): Response
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = Customer::with(['primaryLocation', 'locations', 'archivedLocations'])
             ->withCount('locations')
             ->latest()
@@ -91,6 +93,8 @@ class CustomerController extends Controller
 
     public function trash(): Response
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = Customer::onlyTrashed()
             ->with(['primaryLocation', 'locations'])
             ->withCount('locations')
@@ -204,7 +208,8 @@ class CustomerController extends Controller
 
     public function destroyLocation(Request $request, Customer $customer, Location $location): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        // Removing a location is a delete, mirroring customer soft-delete (delete perm).
+        $this->authorizeCustomer($customer, 'delete');
         $this->authorizeLocation($customer, $location);
 
         if ($customer->locations()->count() <= 1) {
@@ -235,7 +240,8 @@ class CustomerController extends Controller
 
     public function forceDestroyLocation(Request $request, Customer $customer, Location $location): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        // Permanent deletion of location data requires the delete permission.
+        $this->authorizeCustomer($customer, 'delete');
         $this->authorizeLocation($customer, $location);
 
         $isReferencedByInvoice = Invoice::withoutGlobalScopes()

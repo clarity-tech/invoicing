@@ -33,6 +33,8 @@ class InvoiceController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Invoice::class);
+
         $query = Invoice::with([
             'customer',
             'organizationLocation.locatable',
@@ -570,7 +572,9 @@ class InvoiceController extends Controller
 
     public function duplicate(Invoice $invoice): RedirectResponse
     {
-        $this->authorize('view', $invoice);
+        // Duplicating mints a brand-new invoice, so it is a create — not a read.
+        // The source is already org-scoped via the global scope.
+        $this->authorize('create', Invoice::class);
 
         $invoice->load('items');
 
@@ -666,7 +670,11 @@ class InvoiceController extends Controller
 
     public function deletePayment(Invoice $invoice, Payment $payment): RedirectResponse
     {
-        $this->authorize('update', $invoice);
+        // Deleting a payment is destructive financial data removal → delete perm.
+        $this->authorize('delete', $invoice);
+
+        // Payment is not org-scoped, so ensure it actually belongs to this invoice.
+        abort_unless($payment->invoice_id === $invoice->id, 404);
 
         DB::transaction(function () use ($invoice, $payment) {
             $payment->delete();
