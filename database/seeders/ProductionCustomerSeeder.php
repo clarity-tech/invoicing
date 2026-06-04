@@ -64,7 +64,7 @@ class ProductionCustomerSeeder extends Seeder
             'state' => 'Karnataka',
             'country' => 'IN',
             'postal_code' => '560001',
-            'gstin' => '29AAFCD9711R1ZV',
+            'tax_id' => '29AAFCD9711R1ZV',
             'locatable_type' => Customer::class,
             'locatable_id' => $docOnlineCustomer->id,
         ]);
@@ -87,7 +87,7 @@ class ProductionCustomerSeeder extends Seeder
             'state' => 'Telangana',
             'country' => 'IN',
             'postal_code' => '500003',
-            'gstin' => '36AACCK2540G1ZU',
+            'tax_id' => '36AACCK2540G1ZU',
             'locatable_type' => Customer::class,
             'locatable_id' => $krishnaCustomer->id,
         ]);

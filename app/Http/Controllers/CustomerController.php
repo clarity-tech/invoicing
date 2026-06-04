@@ -22,6 +22,8 @@ class CustomerController extends Controller
 {
     public function index(): Response
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = Customer::with(['primaryLocation', 'locations', 'archivedLocations'])
             ->withCount('locations')
             ->latest()
@@ -38,6 +40,9 @@ class CustomerController extends Controller
 
     public function store(StoreCustomerRequest $request): RedirectResponse
     {
+        $organization = $request->user()->currentTeam;
+        abort_unless($organization, 403, __('messages.authorization.no_organization_context'));
+
         $validated = $request->validated();
 
         $filteredContacts = array_filter($validated['contacts'], fn ($c) => ! empty(trim($c['email'])));
@@ -51,7 +56,7 @@ class CustomerController extends Controller
             'phone' => $validated['phone'] ?? null,
             'currency' => $validated['currency'],
             'emails' => new ContactCollection($filteredContacts),
-            'organization_id' => $request->user()->currentTeam->id,
+            'organization_id' => $organization->id,
         ]);
 
         return back()->with('success', __('messages.notifications.customer_created_add_location'));
@@ -79,7 +84,7 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        $this->authorizeCustomer($customer, 'delete');
 
         $customer->delete();
 
@@ -88,6 +93,8 @@ class CustomerController extends Controller
 
     public function trash(): Response
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = Customer::onlyTrashed()
             ->with(['primaryLocation', 'locations'])
             ->withCount('locations')
@@ -139,7 +146,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'gstin' => ['nullable', 'string', 'max:50'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
             'address_line_1' => ['required', 'string', 'max:500'],
             'address_line_2' => ['nullable', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:100'],
@@ -150,7 +157,7 @@ class CustomerController extends Controller
 
         $location = Location::create([
             'name' => $validated['name'],
-            'gstin' => ($validated['gstin'] ?? null) ?: null,
+            'tax_id' => ($validated['tax_id'] ?? null) ?: null,
             'address_line_1' => $validated['address_line_1'],
             'address_line_2' => ($validated['address_line_2'] ?? null) ?: null,
             'city' => $validated['city'],
@@ -176,7 +183,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'gstin' => ['nullable', 'string', 'max:50'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
             'address_line_1' => ['required', 'string', 'max:500'],
             'address_line_2' => ['nullable', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:100'],
@@ -187,7 +194,7 @@ class CustomerController extends Controller
 
         $location->update([
             'name' => $validated['name'],
-            'gstin' => ($validated['gstin'] ?? null) ?: null,
+            'tax_id' => ($validated['tax_id'] ?? null) ?: null,
             'address_line_1' => $validated['address_line_1'],
             'address_line_2' => ($validated['address_line_2'] ?? null) ?: null,
             'city' => $validated['city'],
@@ -201,7 +208,8 @@ class CustomerController extends Controller
 
     public function destroyLocation(Request $request, Customer $customer, Location $location): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        // Removing a location is a delete, mirroring customer soft-delete (delete perm).
+        $this->authorizeCustomer($customer, 'delete');
         $this->authorizeLocation($customer, $location);
 
         if ($customer->locations()->count() <= 1) {
@@ -232,7 +240,8 @@ class CustomerController extends Controller
 
     public function forceDestroyLocation(Request $request, Customer $customer, Location $location): RedirectResponse
     {
-        $this->authorizeCustomer($customer);
+        // Permanent deletion of location data requires the delete permission.
+        $this->authorizeCustomer($customer, 'delete');
         $this->authorizeLocation($customer, $location);
 
         $isReferencedByInvoice = Invoice::withoutGlobalScopes()
@@ -261,10 +270,10 @@ class CustomerController extends Controller
         return back()->with('success', __('messages.notifications.primary_location_updated'));
     }
 
-    private function authorizeCustomer(Customer $customer): void
+    private function authorizeCustomer(Customer $customer, string $ability = 'update'): void
     {
         abort_unless(
-            auth()->user()->allTeams()->contains('id', $customer->organization_id),
+            auth()->user()->can($ability, $customer),
             403
         );
     }

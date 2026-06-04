@@ -6,8 +6,10 @@ import { index as customersIndex } from '@/routes/customers';
 import { index as invoicesIndex } from '@/routes/invoices';
 import { index as settingsIndex } from '@/routes/settings';
 import { index as organizationsIndex } from '@/routes/organizations';
+import { create as teamsCreate } from '@/routes/teams';
 import { update as switchTeam } from '@/routes/current-team';
 import { show as profileShow } from '@/routes/profile';
+import { usePermissions } from '@/composables/usePermissions';
 
 interface TeamSummary {
     id: number;
@@ -38,6 +40,8 @@ const auth = (page.props.auth ?? {}) as {
 
 const teams = computed<TeamSummary[]>(() => auth.user?.all_teams ?? []);
 const hasMultipleTeams = computed(() => teams.value.length > 1);
+
+const { canManage } = usePermissions();
 
 function handleLogout() {
     router.flushAll();
@@ -144,6 +148,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                             Organizations
                         </Link>
                         <Link
+                            v-if="canManage"
                             :href="settingsIndex.url()"
                             class="inline-flex items-center border-b-2 px-1 pt-1 text-sm leading-5 font-medium transition"
                             :class="
@@ -167,13 +172,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                         data-team-dropdown
                     >
                         <button
-                            v-if="hasMultipleTeams"
                             type="button"
                             class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:outline-none"
                             @click.stop="showTeamDropdown = !showTeamDropdown"
                         >
                             <span class="max-w-[12rem] truncate">{{
-                                auth.currentTeam.company_name ||
                                 auth.currentTeam.name
                             }}</span>
                             <svg
@@ -191,15 +194,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                                 />
                             </svg>
                         </button>
-                        <span v-else class="text-sm text-gray-500">
-                            {{
-                                auth.currentTeam.company_name ||
-                                auth.currentTeam.name
-                            }}
-                        </span>
 
                         <div
-                            v-show="showTeamDropdown && hasMultipleTeams"
+                            v-show="showTeamDropdown"
                             class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-xl border border-gray-100 bg-white shadow-lg"
                         >
                             <div
@@ -216,7 +213,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                                     @click="selectTeam(team.id)"
                                 >
                                     <span class="truncate">{{
-                                        team.company_name || team.name
+                                        team.name
                                     }}</span>
                                     <svg
                                         v-if="auth.currentTeam?.id === team.id"
@@ -235,6 +232,25 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                                 </button>
                             </div>
                             <div class="border-t border-gray-100 py-1">
+                                <Link
+                                    :href="teamsCreate.url()"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-gray-50"
+                                >
+                                    <svg
+                                        class="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M12 4.5v15m7.5-7.5h-15"
+                                        />
+                                    </svg>
+                                    Create organization
+                                </Link>
                                 <Link
                                     :href="organizationsIndex.url()"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -430,6 +446,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     >Organizations</Link
                 >
                 <Link
+                    v-if="canManage"
                     :href="settingsIndex.url()"
                     class="block border-l-4 py-2 pr-4 pl-3 text-base font-medium"
                     :class="
@@ -463,9 +480,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                         class="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                         @click="selectTeam(team.id)"
                     >
-                        <span class="truncate">{{
-                            team.company_name || team.name
-                        }}</span>
+                        <span class="truncate">{{ team.name }}</span>
                         <svg
                             v-if="auth.currentTeam?.id === team.id"
                             class="h-4 w-4 text-brand-600"
@@ -481,6 +496,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                             />
                         </svg>
                     </button>
+                    <Link
+                        :href="teamsCreate.url()"
+                        class="block px-4 py-2 text-base font-medium text-brand-700 hover:bg-gray-50"
+                    >
+                        + Create organization
+                    </Link>
                     <Link
                         :href="organizationsIndex.url()"
                         class="block px-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800"

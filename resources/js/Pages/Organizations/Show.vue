@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { Pencil } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useTaxLabel, type TaxLabels } from '@/composables/useTaxLabel';
 
 interface Location {
     id: number;
     name: string;
-    gstin: string | null;
+    tax_id: string | null;
     address_line_1: string;
     address_line_2: string | null;
     city: string;
@@ -57,9 +59,14 @@ interface NumberingSeries {
 const props = defineProps<{
     organization: Organization;
     numberingSeries: NumberingSeries[];
+    canManage: boolean;
+    taxLabels: TaxLabels;
 }>();
 
 const org = props.organization;
+
+const locationCountry = computed(() => org.primary_location?.country ?? null);
+const { label: taxLabel } = useTaxLabel(locationCountry, props.taxLabels);
 
 const hasBank = !!(
     org.bank_details?.bank_name ||
@@ -183,6 +190,7 @@ function previewNumber(series: NumberingSeries): string {
                     </div>
                 </div>
                 <Link
+                    v-if="canManage"
                     :href="`/organizations/${org.id}/edit`"
                     class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:outline-none"
                 >
@@ -277,15 +285,16 @@ function previewNumber(series: NumberingSeries): string {
                             {{ org.primary_location.postal_code }}
                         </p>
                         <p
-                            v-if="org.primary_location.gstin"
+                            v-if="org.primary_location.tax_id"
                             class="mt-2 font-mono text-xs text-gray-500"
                         >
-                            GSTIN: {{ org.primary_location.gstin }}
+                            {{ taxLabel }}: {{ org.primary_location.tax_id }}
                         </p>
                     </div>
                     <p v-else class="text-sm text-gray-400 italic">
                         No location configured.
                         <Link
+                            v-if="canManage"
                             :href="`/organizations/${org.id}/edit?tab=location`"
                             class="text-brand-600 not-italic hover:underline"
                             >Add one</Link
@@ -330,6 +339,7 @@ function previewNumber(series: NumberingSeries): string {
                     <p v-else class="text-sm text-gray-400 italic">
                         No bank details configured.
                         <Link
+                            v-if="canManage"
                             :href="`/organizations/${org.id}/edit?tab=bank`"
                             class="text-brand-600 not-italic hover:underline"
                             >Add details</Link
@@ -346,6 +356,7 @@ function previewNumber(series: NumberingSeries): string {
                             Numbering Series
                         </h2>
                         <Link
+                            v-if="canManage"
                             :href="`/organizations/${org.id}/edit?tab=numbering`"
                             class="text-xs font-medium text-brand-600 hover:text-brand-900"
                         >

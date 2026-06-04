@@ -63,7 +63,7 @@ class OrganizationSetupController extends Controller
                 'financial_year_start_day' => $organization->financial_year_start_day ?? 1,
                 'primary_location' => $organization->primaryLocation ? [
                     'name' => $organization->primaryLocation->name,
-                    'gstin' => $organization->primaryLocation->gstin ?? '',
+                    'tax_id' => $organization->primaryLocation->tax_id ?? '',
                     'address_line_1' => $organization->primaryLocation->address_line_1,
                     'address_line_2' => $organization->primaryLocation->address_line_2 ?? '',
                     'city' => $organization->primaryLocation->city,
@@ -79,8 +79,19 @@ class OrganizationSetupController extends Controller
     public function saveStep(Request $request, Organization $organization): RedirectResponse
     {
         $user = $request->user();
-        if (! $user->allTeams()->contains('id', $organization->id)) {
+
+        // Setup mutates the same core org settings that OrganizationController gates
+        // behind "manage" — so only owners/admins may run the wizard, never editors
+        // or viewers.
+        if (! $user->hasTeamPermission($organization, 'manage')) {
             abort(403, __('messages.authorization.no_permission_edit_organization'));
+        }
+
+        // Once setup is complete, settings changes must go through the guarded
+        // organization settings screen; the wizard endpoint is no longer a valid
+        // path to overwrite them.
+        if ($organization->isSetupComplete()) {
+            return redirect()->route('dashboard');
         }
 
         $step = (int) $request->input('step', 1);
@@ -117,7 +128,7 @@ class OrganizationSetupController extends Controller
             ]),
             2 => $request->validate([
                 'location_name' => ['nullable', 'string', 'max:255'],
-                'gstin' => ['nullable', 'string', 'max:50'],
+                'tax_id' => ['nullable', 'string', 'max:50'],
                 'country_code' => ['required', 'string', ValidationRule::enum(Country::class)],
                 'address_line_1' => ['required', 'string', 'max:500'],
                 'address_line_2' => ['nullable', 'string', 'max:500'],
@@ -142,8 +153,9 @@ class OrganizationSetupController extends Controller
 
     private function saveStep1(Request $request, Organization $organization): void
     {
+        // Only set company_name (the legal/business name on invoices). The org's
+        // `name` is the switcher label set at creation and must not be overwritten.
         $organization->update([
-            'name' => $request->input('company_name'),
             'company_name' => $request->input('company_name'),
             'tax_number' => $request->input('tax_number') ?: null,
             'registration_number' => $request->input('registration_number') ?: null,
@@ -159,8 +171,8 @@ class OrganizationSetupController extends Controller
         $organization->update(['country_code' => $countryCode]);
 
         $locationData = [
-            'name' => $request->input('location_name') ?: ($organization->company_name ?: 'Main Office'),
-            'gstin' => $request->input('gstin') ?: null,
+            'name' => $request->input('location_name') ?: 'Head Office',
+            'tax_id' => $request->input('tax_id') ?: null,
             'address_line_1' => $request->input('address_line_1'),
             'address_line_2' => $request->input('address_line_2') ?: null,
             'city' => $request->input('city'),

@@ -7,6 +7,11 @@ use App\Models\User;
 beforeEach(function () {
     $this->user = User::factory()->withPersonalTeam()->create();
     $this->actingAs($this->user);
+
+    // The setup wizard only operates on an in-progress org; the withPersonalTeam
+    // factory marks setup complete, so reset it to the realistic incomplete state.
+    // (Tests that assert the "already complete" behaviour set it back themselves.)
+    $this->user->currentTeam->update(['setup_completed_at' => null]);
 });
 
 test('can render organization setup page', function () {
@@ -54,6 +59,23 @@ test('can save step 1 company information', function () {
     ]);
 });
 
+test('step 1 sets company name without overwriting the organization name', function () {
+    $organization = $this->user->currentTeam;
+    $organization->update(['name' => 'Acme Workspace']);
+
+    $this->post("/organization/setup/{$organization->id}/step", [
+        'step' => 1,
+        'company_name' => 'Acme Manufacturing Pvt Ltd',
+    ])->assertRedirect();
+
+    // The switcher label (name) is preserved; only the legal company_name changes.
+    $this->assertDatabaseHas('teams', [
+        'id' => $organization->id,
+        'name' => 'Acme Workspace',
+        'company_name' => 'Acme Manufacturing Pvt Ltd',
+    ]);
+});
+
 test('validates step 1 requires company name', function () {
     $organization = $this->user->currentTeam;
 
@@ -83,7 +105,7 @@ test('can save step 2 location data', function () {
     $response = $this->post("/organization/setup/{$organization->id}/step", [
         'step' => 2,
         'location_name' => 'Main Office',
-        'gstin' => '27AABCG9603R1ZV',
+        'tax_id' => '27AABCG9603R1ZV',
         'country_code' => 'IN',
         'address_line_1' => '123 Test Street',
         'address_line_2' => 'Suite 100',
@@ -96,7 +118,7 @@ test('can save step 2 location data', function () {
 
     $this->assertDatabaseHas('locations', [
         'name' => 'Main Office',
-        'gstin' => '27AABCG9603R1ZV',
+        'tax_id' => '27AABCG9603R1ZV',
         'address_line_1' => '123 Test Street',
         'city' => 'Mumbai',
         'country' => 'IN',
@@ -239,7 +261,7 @@ test('step 2 updates existing location', function () {
     ]);
 });
 
-test('location name defaults to company name when empty', function () {
+test('location name defaults to a generic label when empty', function () {
     $organization = $this->user->currentTeam;
     $organization->update(['company_name' => 'Test Company Ltd']);
 
@@ -255,7 +277,11 @@ test('location name defaults to company name when empty', function () {
 
     $response->assertRedirect();
 
+    // The location is named generically, not after the company.
     $this->assertDatabaseHas('locations', [
+        'name' => 'Head Office',
+    ]);
+    $this->assertDatabaseMissing('locations', [
         'name' => 'Test Company Ltd',
     ]);
 });

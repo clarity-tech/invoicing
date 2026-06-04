@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Organization;
 use Illuminate\Http\UploadedFile;
 
@@ -30,6 +32,8 @@ test('can render organization show page', function () {
     $response->assertInertia(fn ($page) => $page
         ->component('Organizations/Show')
         ->has('organization')
+        ->where('taxLabels.IN', 'GSTIN')
+        ->where('taxLabels.US', 'EIN')
     );
 });
 
@@ -79,6 +83,35 @@ test('can update organization basics', function () {
     expect($organization->currency->value)->toBe('USD');
 });
 
+test('can update the company name independently of the organization name', function () {
+    $organization = createOrganizationWithLocation(['name' => 'Acme Workspace', 'company_name' => 'Old Co'], [], $this->user);
+
+    $this->put("/organizations/{$organization->id}", [
+        'name' => 'Acme Workspace',
+        'company_name' => 'Acme Manufacturing Pvt Ltd',
+        'emails' => ['ops@acme.test'],
+        'currency' => 'INR',
+        'country_code' => 'IN',
+    ])->assertRedirect();
+
+    $organization->refresh();
+    expect($organization->name)->toBe('Acme Workspace');
+    expect($organization->company_name)->toBe('Acme Manufacturing Pvt Ltd');
+});
+
+test('omitting company_name leaves it unchanged', function () {
+    $organization = createOrganizationWithLocation(['company_name' => 'Keep Me Ltd'], [], $this->user);
+
+    $this->put("/organizations/{$organization->id}", [
+        'name' => 'Renamed Workspace',
+        'emails' => ['ops@acme.test'],
+        'currency' => 'INR',
+        'country_code' => 'IN',
+    ])->assertRedirect();
+
+    expect($organization->refresh()->company_name)->toBe('Keep Me Ltd');
+});
+
 test('validates required fields when updating organization', function () {
     $organization = createOrganizationWithLocation([], [], $this->user);
 
@@ -123,7 +156,7 @@ test('can update organization location', function () {
 
     $response = $this->put("/organizations/{$organization->id}/location", [
         'location_name' => 'New Office',
-        'gstin' => 'NEWGSTIN123',
+        'tax_id' => 'NEWGSTIN123',
         'address_line_1' => '456 New St',
         'address_line_2' => 'Suite 200',
         'city' => 'New City',
@@ -137,7 +170,7 @@ test('can update organization location', function () {
     $organization->refresh();
     $location = $organization->primaryLocation;
     expect($location->name)->toBe('New Office');
-    expect($location->gstin)->toBe('NEWGSTIN123');
+    expect($location->tax_id)->toBe('NEWGSTIN123');
     expect($location->address_line_1)->toBe('456 New St');
     expect($location->city)->toBe('New City');
 });
@@ -188,7 +221,10 @@ test('can delete organization when user has more than one', function () {
     $response = $this->delete("/organizations/{$secondOrgId}");
 
     $response->assertRedirect('/organizations');
+    // Soft delete: hidden from normal queries but recoverable.
     expect(Organization::find($secondOrgId))->toBeNull();
+    $this->assertSoftDeleted('teams', ['id' => $secondOrgId]);
+    expect(Organization::withTrashed()->find($secondOrgId))->not->toBeNull();
 });
 
 test('cannot delete the only owned organization', function () {
@@ -214,7 +250,37 @@ test('deleting current org switches to remaining owned org', function () {
 
     $response->assertRedirect('/organizations');
     expect(Organization::find($current->id))->toBeNull();
+    $this->assertSoftDeleted('teams', ['id' => $current->id]);
     expect($this->user->fresh()->current_team_id)->toBe($remaining->id);
+});
+
+test('deleting an organization soft-deletes it and preserves its invoices and customers', function () {
+    // Second org made current so helpers scope to it; give it a location so invoices are valid.
+    $secondOrg = Organization::factory()->completedSetup()->create([
+        'user_id' => $this->user->id,
+    ]);
+    $this->user->switchTeam($secondOrg);
+    $this->actingAs($this->user->fresh());
+
+    $secondOrg = createOrganizationWithLocation([], [], $this->user);
+    $customer = createCustomerWithLocation([], [], $secondOrg);
+    $invoice = createInvoiceWithItems([], null, $secondOrg, $customer);
+
+    $response = $this->delete("/organizations/{$secondOrg->id}");
+
+    $response->assertRedirect('/organizations');
+
+    // Org is soft-deleted (recoverable), not cascade-wiped...
+    $this->assertSoftDeleted('teams', ['id' => $secondOrg->id]);
+
+    // ...and its child data still physically exists in the database. Drop ALL global
+    // scopes (OrganizationScope is now pointed at the remaining org, plus SoftDeletes)
+    // to assert the raw rows were not cascade-deleted.
+    expect(Customer::withoutGlobalScopes()->whereKey($customer->id)->exists())->toBeTrue();
+    expect(Invoice::withoutGlobalScopes()->whereKey($invoice->id)->exists())->toBeTrue();
+
+    // It no longer appears among the user's owned organizations / switcher list.
+    expect($this->user->fresh()->ownedTeams()->pluck('id'))->not->toContain($secondOrg->id);
 });
 
 test('cannot update organization user does not own', function () {

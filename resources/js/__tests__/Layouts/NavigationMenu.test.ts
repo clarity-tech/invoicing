@@ -37,6 +37,8 @@ vi.mock('@inertiajs/vue3', () => ({
                     id: 1,
                     name: "Test's Team",
                     company_name: 'Test Co',
+                    role: 'owner',
+                    permissions: ['*'],
                 },
             },
             flash: { success: null, error: null, message: null },
@@ -97,7 +99,7 @@ describe('NavigationMenu', () => {
 
     it('renders current team name', () => {
         const wrapper = mount(NavigationMenu);
-        expect(wrapper.text()).toContain('Test Co');
+        expect(wrapper.text()).toContain("Test's Team");
     });
 
     it('renders user avatar', () => {

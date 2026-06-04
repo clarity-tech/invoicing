@@ -9,11 +9,14 @@ use App\Enums\ResetFrequency;
 use App\Models\Location;
 use App\Models\Organization;
 use App\Rules\CurrencyCode;
+use App\Support\Jetstream;
+use App\Support\JetstreamFeatures;
 use App\ValueObjects\BankDetails;
 use App\ValueObjects\ContactCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule as ValidationRule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -38,7 +41,8 @@ class OrganizationController extends Controller
 
     public function show(Request $request, Organization $organization): Response
     {
-        $this->authorizeAccess($request, $organization);
+        // Viewing the org overview only requires membership (any role).
+        abort_unless($request->user()->belongsToTeam($organization), 403, __('messages.authorization.no_permission_edit_organization'));
 
         $organization->load('primaryLocation');
 
@@ -50,6 +54,8 @@ class OrganizationController extends Controller
         return Inertia::render('Organizations/Show', [
             'organization' => $organization,
             'numberingSeries' => $numberingSeries,
+            'canManage' => $request->user()->hasTeamPermission($organization, 'manage'),
+            'taxLabels' => Country::taxLabels(),
         ]);
     }
 
@@ -57,7 +63,7 @@ class OrganizationController extends Controller
     {
         $this->authorizeAccess($request, $organization);
 
-        $organization->load('primaryLocation');
+        $organization->load(['primaryLocation', 'owner', 'users', 'teamInvitations']);
 
         $numberingSeries = $organization->numberingSeries()
             ->orderByDesc('is_default')
@@ -71,6 +77,16 @@ class OrganizationController extends Controller
             'tab' => $request->query('tab', 'basics'),
             'numberingSeries' => $numberingSeries,
             'resetFrequencyOptions' => ResetFrequency::getOptions(),
+            'availableRoles' => Jetstream::availableRoles(),
+            'memberPermissions' => [
+                'canAddTeamMembers' => Gate::check('addTeamMember', $organization),
+                'canDeleteTeam' => Gate::check('delete', $organization),
+                'canRemoveTeamMembers' => Gate::check('removeTeamMember', $organization),
+                'canUpdateTeam' => Gate::check('update', $organization),
+                'canUpdateTeamMembers' => Gate::check('updateTeamMember', $organization),
+            ],
+            'hasRoles' => Jetstream::hasRoles(),
+            'sendsTeamInvitations' => JetstreamFeatures::sendsTeamInvitations(),
         ]);
     }
 
@@ -80,6 +96,7 @@ class OrganizationController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'company_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]+$/'],
             'emails' => ['required', 'array', 'min:1'],
             'emails.*' => ['nullable', 'email'],
@@ -111,7 +128,7 @@ class OrganizationController extends Controller
             array_map(fn ($email) => ['name' => '', 'email' => $email], $filteredEmails)
         );
 
-        $organization->update([
+        $attributes = [
             'name' => $validated['name'],
             'phone' => ($validated['phone'] ?? '') ?: null,
             'emails' => $contactCollection,
@@ -124,7 +141,15 @@ class OrganizationController extends Controller
             'registration_number' => ($validated['registration_number'] ?? '') ?: null,
             'website' => ($validated['website'] ?? '') ?: null,
             'notes' => ($validated['notes'] ?? '') ?: null,
-        ]);
+        ];
+
+        // Only touch company_name when the form actually submits it, so callers
+        // that omit the field don't accidentally clear the legal business name.
+        if ($request->has('company_name')) {
+            $attributes['company_name'] = ($validated['company_name'] ?? '') ?: null;
+        }
+
+        $organization->update($attributes);
 
         return back()->with('message', __('messages.notifications.organization_updated'));
     }
@@ -135,7 +160,7 @@ class OrganizationController extends Controller
 
         $validated = $request->validate([
             'location_name' => ['nullable', 'string', 'max:255'],
-            'gstin' => ['nullable', 'string', 'max:50'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
             'address_line_1' => ['required', 'string', 'max:500'],
             'address_line_2' => ['nullable', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:100'],
@@ -146,7 +171,7 @@ class OrganizationController extends Controller
 
         $locationData = [
             'name' => ($validated['location_name'] ?? '') ?: ($organization->name ?: 'Main Office'),
-            'gstin' => ($validated['gstin'] ?? '') ?: null,
+            'tax_id' => ($validated['tax_id'] ?? '') ?: null,
             'address_line_1' => $validated['address_line_1'],
             'address_line_2' => ($validated['address_line_2'] ?? '') ?: null,
             'city' => $validated['city'],
@@ -243,9 +268,9 @@ class OrganizationController extends Controller
             }
         }
 
-        $organization->primary_location_id = null;
-        $organization->save();
-        $organization->locations()->delete();
+        // Soft delete only: leave the organization's locations and child data
+        // (invoices, customers, ...) intact so it can be restored. Hard-deleting
+        // here would also fire the cascade FKs and permanently destroy that data.
         $organization->delete();
 
         return redirect()->route('organizations.index')
@@ -271,12 +296,14 @@ class OrganizationController extends Controller
         ]);
     }
 
+    /**
+     * Editing organization settings requires the "manage" permission (owner/admin).
+     */
     private function authorizeAccess(Request $request, Organization $organization): void
     {
         $user = $request->user();
-        $hasAccess = $user->allTeams()->contains('id', $organization->id);
 
-        if (! $hasAccess) {
+        if (! $user->hasTeamPermission($organization, 'manage')) {
             abort(403, __('messages.authorization.no_permission_edit_organization'));
         }
     }

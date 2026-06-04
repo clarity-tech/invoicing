@@ -217,15 +217,26 @@ class DashboardController extends Controller
             ->toArray();
     }
 
+    /**
+     * Build the database-specific SQL expression that formats `issued_at`
+     * into a `YYYY-MM` month key. Each engine exposes a different function
+     * (PostgreSQL: to_char, MySQL/MariaDB: DATE_FORMAT, SQLite: strftime).
+     */
+    public static function monthKeyExpression(string $driver): string
+    {
+        return match ($driver) {
+            'sqlite' => "strftime('%Y-%m', issued_at)",
+            'mysql', 'mariadb' => "DATE_FORMAT(issued_at, '%Y-%m')",
+            default => "to_char(issued_at, 'YYYY-MM')", // pgsql
+        };
+    }
+
     private function getMonthlyTrend(): array
     {
         $start = now()->subMonths(5)->startOfMonth();
         $end = now()->endOfMonth();
 
-        $driver = DB::getDriverName();
-        $monthExpr = $driver === 'sqlite'
-            ? "strftime('%Y-%m', issued_at)"
-            : "to_char(issued_at, 'YYYY-MM')";
+        $monthExpr = self::monthKeyExpression(DB::getDriverName());
 
         $scale = self::RATE_SCALE;
         $rows = Invoice::invoices()
