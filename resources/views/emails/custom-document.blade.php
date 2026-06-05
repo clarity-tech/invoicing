@@ -26,6 +26,9 @@
             font-size: 14px;
             line-height: 1.8;
         }
+        .email-body > :first-child {
+            margin-top: 0;
+        }
         /* Constrain logo images */
         .email-body img {
             max-height: 100px;
