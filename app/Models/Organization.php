@@ -478,7 +478,7 @@ class Organization extends Model implements HasMedia
     {
         $logo = $this->getFirstMedia('logo');
 
-        return $logo ? $logo->getUrl() : null;
+        return $logo ? $logo->getTemporaryUrl() : null;
     }
 
     /**
@@ -488,7 +488,7 @@ class Organization extends Model implements HasMedia
     {
         $logo = $this->getFirstMedia('logo');
 
-        return $logo ? $logo->getUrl('thumb') : null;
+        return $logo ? $logo->getTemporaryUrl(null, 'thumb') : null;
     }
 
     /**

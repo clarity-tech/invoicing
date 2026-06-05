@@ -60,24 +60,6 @@ return [
             'report' => false,
         ],
 
-        // Same bucket as "s3", but objects are written with a public-read ACL so
-        // browser-facing assets (org logos, profile photos) resolve without a
-        // bucket-wide public policy. The plain "s3" disk stays private and is
-        // used for sensitive files such as queued email attachments.
-        's3_public' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'visibility' => 'public',
-            'throw' => false,
-            'report' => false,
-        ],
-
     ],
 
     /*
