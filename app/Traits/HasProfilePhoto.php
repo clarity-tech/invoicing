@@ -53,12 +53,18 @@ trait HasProfilePhoto
     protected function profilePhotoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->profile_photo_path
-                    ? Storage::disk($this->profilePhotoDisk())->temporaryUrl(
+            if (! $this->profile_photo_path) {
+                return $this->defaultProfilePhotoUrl();
+            }
+
+            $disk = Storage::disk($this->profilePhotoDisk());
+
+            return $disk->providesTemporaryUrls()
+                    ? $disk->temporaryUrl(
                         $this->profile_photo_path,
                         now()->addMinutes(config('media-library.temporary_url_default_lifetime')),
                     )
-                    : $this->defaultProfilePhotoUrl();
+                    : $disk->url($this->profile_photo_path);
         });
     }
 

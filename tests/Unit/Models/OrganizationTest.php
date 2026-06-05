@@ -918,6 +918,36 @@ test('logoThumbUrl returns null when no logo uploaded', function () {
     expect($organization->logo_thumb_url)->toBeNull();
 });
 
+test('logoUrl falls back to a regular url on disks without temporary url support', function () {
+    // A plain local disk (no serve/temporary_url) does not support temporary URLs,
+    // mirroring the local/dev setup where getTemporaryUrl() previously threw.
+    config([
+        'filesystems.disks.plain_local' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/plain_local'),
+            'url' => 'http://localhost/storage',
+        ],
+        'media-library.disk_name' => 'plain_local',
+    ]);
+
+    $organization = createOrganizationWithLocation();
+
+    $pngBytes = base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+    );
+
+    $organization
+        ->addMediaFromString($pngBytes)
+        ->usingFileName('logo.png')
+        ->toMediaCollection('logo');
+
+    $organization = $organization->fresh();
+
+    expect(Storage::disk('plain_local')->providesTemporaryUrls())->toBeFalse()
+        ->and($organization->logo_url)->not->toBeNull()
+        ->and($organization->logo_thumb_url)->not->toBeNull();
+});
+
 test('logoBase64 returns null when no logo uploaded', function () {
     $organization = createOrganizationWithLocation();
 

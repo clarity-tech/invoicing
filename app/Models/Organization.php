@@ -476,9 +476,7 @@ class Organization extends Model implements HasMedia
      */
     public function getLogoUrlAttribute(): ?string
     {
-        $logo = $this->getFirstMedia('logo');
-
-        return $logo ? $logo->getTemporaryUrl() : null;
+        return $this->resolveLogoUrl();
     }
 
     /**
@@ -486,9 +484,27 @@ class Organization extends Model implements HasMedia
      */
     public function getLogoThumbUrlAttribute(): ?string
     {
+        return $this->resolveLogoUrl('thumb');
+    }
+
+    /**
+     * Resolve a logo URL, using a short-lived temporary URL on disks that
+     * support them (e.g. S3) and falling back to a regular URL on disks that
+     * do not (e.g. the local disk in dev/testing).
+     */
+    private function resolveLogoUrl(string $conversion = ''): ?string
+    {
         $logo = $this->getFirstMedia('logo');
 
-        return $logo ? $logo->getTemporaryUrl(null, 'thumb') : null;
+        if (! $logo) {
+            return null;
+        }
+
+        if (Storage::disk($logo->disk)->providesTemporaryUrls()) {
+            return $logo->getTemporaryUrl(null, $conversion);
+        }
+
+        return $logo->getUrl($conversion);
     }
 
     /**
