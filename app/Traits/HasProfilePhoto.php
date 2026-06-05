@@ -76,6 +76,6 @@ trait HasProfilePhoto
      */
     protected function profilePhotoDisk(): string
     {
-        return isset($_ENV['VAPOR_ARTIFACT_NAME']) ? 's3' : config('jetstream.profile_photo_disk', 'public');
+        return config('jetstream.profile_photo_disk', 's3_public');
     }
 }
