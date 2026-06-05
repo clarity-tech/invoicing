@@ -52,7 +52,7 @@ const form = useForm({
     subject: '',
     body: '',
     attach_pdf: true,
-    include_view_online_button: true,
+    include_view_online_button: false,
     attachments: [] as File[],
 });
 
@@ -189,7 +189,7 @@ watch(
             form.recipients = [...customerEmails.value];
             form.cc = [...orgEmails.value];
             form.attach_pdf = true;
-            form.include_view_online_button = true;
+            form.include_view_online_button = false;
             form.attachments = [];
             form.clearErrors();
             newToEmail.value = '';
