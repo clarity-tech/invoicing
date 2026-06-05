@@ -16,7 +16,7 @@ trait HasProfilePhoto
     {
         tap($this->profile_photo_path, function ($previous) use ($photo, $storagePath) {
             $this->forceFill([
-                'profile_photo_path' => $photo->storePublicly(
+                'profile_photo_path' => $photo->store(
                     $storagePath, ['disk' => $this->profilePhotoDisk()]
                 ),
             ])->save();
@@ -54,7 +54,10 @@ trait HasProfilePhoto
     {
         return Attribute::get(function (): string {
             return $this->profile_photo_path
-                    ? Storage::disk($this->profilePhotoDisk())->url($this->profile_photo_path)
+                    ? Storage::disk($this->profilePhotoDisk())->temporaryUrl(
+                        $this->profile_photo_path,
+                        now()->addMinutes(config('media-library.temporary_url_default_lifetime')),
+                    )
                     : $this->defaultProfilePhotoUrl();
         });
     }
@@ -76,6 +79,6 @@ trait HasProfilePhoto
      */
     protected function profilePhotoDisk(): string
     {
-        return config('jetstream.profile_photo_disk', 's3_public');
+        return config('jetstream.profile_photo_disk', 's3');
     }
 }

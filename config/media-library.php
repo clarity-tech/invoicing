@@ -32,7 +32,7 @@ return [
      * The disk on which to store added files and derived images by default. Choose
      * one or more of the disks you've configured in config/filesystems.php.
      */
-    'disk_name' => env('MEDIA_DISK', 's3_public'),
+    'disk_name' => env('MEDIA_DISK', 's3'),
 
     /*
      * The maximum file size of an item in bytes.
@@ -257,7 +257,7 @@ return [
      * The default lifetime in minutes for temporary urls.
      * This is used when you call the `getLastTemporaryUrl` or `getLastTemporaryUrl` method on a media item.
      */
-    'temporary_url_default_lifetime' => env('MEDIA_TEMPORARY_URL_DEFAULT_LIFETIME', 5),
+    'temporary_url_default_lifetime' => env('MEDIA_TEMPORARY_URL_DEFAULT_LIFETIME', 15),
 
     'remote' => [
         /*
