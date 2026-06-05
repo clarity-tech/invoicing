@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Environment
 - **Laravel Version**: 13.x
 - **PHP Version**: 8.5
-- **Database**: PostgreSQL 17
+- **Database**: MySQL 8.4 (local and production)
 - **UI Framework**: Vue 3 + Inertia.js v3 (TypeScript, 100% TS codebase)
 - **CSS**: Tailwind CSS v4 (CSS-based `@theme` config, no tailwind.config.js)
 - **Testing**: Pest 4 (backend), Pest Browser + Playwright (browser), Vitest (frontend)
@@ -362,7 +362,7 @@ it('user can access feature', function () {
 - Automatic tax rate selection based on organization currency
 
 **Database Insights:**
-- PostgreSQL with proper foreign key constraints
+- MySQL 8.4 with proper foreign key constraints
 - Uses `RefreshDatabase` trait in ALL tests for isolation
 - ULID primary keys for public document sharing
 - Decimal(5,3) for tax_rate to support high rates (up to 99.999%)
