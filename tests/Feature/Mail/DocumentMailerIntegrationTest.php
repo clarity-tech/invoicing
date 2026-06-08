@@ -59,7 +59,7 @@ test('uses custom subject when provided', function () {
 
 // --- Custom body / view selection tests ---
 
-test('uses custom document view when custom body provided', function () {
+test('renders custom body into the email html when provided', function () {
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'INV-BODY-001',
         'status' => 'sent',
@@ -68,14 +68,13 @@ test('uses custom document view when custom body provided', function () {
     $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
 
     $mailer = new DocumentMailer($invoice, $recipients, null, [], '<p>Custom email body</p>');
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
-    expect($content->view)->toBe('emails.custom-document')
-        ->and($content->with['customBody'])->toBe('<p>Custom email body</p>')
-        ->and($content->with)->toHaveKey('viewUrl');
+    expect($html)->toContain('Custom email body')
+        ->and($html)->toContain('/invoices/view/');
 });
 
-test('uses default invoice view when no custom body', function () {
+test('renders the default invoice body when no custom body', function () {
     $invoice = createInvoiceWithItems([
         'type' => 'invoice',
         'invoice_number' => 'INV-VIEW-001',
@@ -85,13 +84,13 @@ test('uses default invoice view when no custom body', function () {
     $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
 
     $mailer = new DocumentMailer($invoice, $recipients);
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
-    expect($content->view)->toBe('emails.custom-document');
-    expect($content->with)->toHaveKey('customBody');
+    expect($html)->toContain('INV-VIEW-001')
+        ->and($html)->toContain('Thank you for your business');
 });
 
-test('uses custom-document view for estimates', function () {
+test('renders the default estimate body for estimates', function () {
     $estimate = createInvoiceWithItems([
         'type' => 'estimate',
         'invoice_number' => 'EST-VIEW-001',
@@ -101,10 +100,10 @@ test('uses custom-document view for estimates', function () {
     $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
 
     $mailer = new DocumentMailer($estimate, $recipients);
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
-    expect($content->view)->toBe('emails.custom-document');
-    expect($content->with)->toHaveKey('customBody');
+    expect($html)->toContain('EST-VIEW-001')
+        ->and($html)->toContain('Thank you for considering our services');
 });
 
 // --- Multiple recipients tests ---
@@ -141,10 +140,10 @@ test('generates correct public view url for invoice', function () {
     $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
 
     $mailer = new DocumentMailer($invoice, $recipients);
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
-    expect($content->with['viewUrl'])->toContain('/invoices/view/')
-        ->and($content->with['viewUrl'])->toContain($invoice->ulid);
+    expect($html)->toContain('/invoices/view/')
+        ->and($html)->toContain($invoice->ulid);
 });
 
 test('generates correct public view url for estimate', function () {
@@ -157,10 +156,10 @@ test('generates correct public view url for estimate', function () {
     $recipients = new ContactCollection([['name' => 'Test', 'email' => 'test@example.test']]);
 
     $mailer = new DocumentMailer($estimate, $recipients);
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
-    expect($content->with['viewUrl'])->toContain('/estimates/view/')
-        ->and($content->with['viewUrl'])->toContain($estimate->ulid);
+    expect($html)->toContain('/estimates/view/')
+        ->and($html)->toContain($estimate->ulid);
 });
 
 // --- Attachments array test ---
@@ -309,11 +308,10 @@ test('accepts all constructor parameters', function () {
     );
 
     $envelope = $mailer->envelope();
-    $content = $mailer->content();
+    $html = $mailer->renderHtml();
 
     expect($envelope->subject)->toBe('Custom Subject')
         ->and($envelope->to[0]->address)->toBe('main@example.test')
         ->and(collect($envelope->cc)->first()->address)->toBe('cc@example.test')
-        ->and($content->view)->toBe('emails.custom-document')
-        ->and($content->with['customBody'])->toBe('<p>Please pay</p>');
+        ->and($html)->toContain('Please pay');
 });

@@ -14,6 +14,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 
 class DocumentMailer extends Mailable implements ShouldQueue
 {
@@ -52,17 +53,28 @@ class DocumentMailer extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
+        return new Content(htmlString: $this->renderHtml());
+    }
+
+    /**
+     * Render the email template and inline its CSS.
+     *
+     * Email clients such as Gmail strip <style> blocks and <head> styles, so
+     * the rendered HTML is passed through a CSS inliner that rewrites the
+     * stylesheet rules as inline style="" attributes on each element.
+     */
+    public function renderHtml(): string
+    {
         $body = $this->customBody ?? $this->resolveDefaultBody();
 
-        return new Content(
-            view: 'emails.custom-document',
-            with: [
-                'customBody' => $body,
-                'invoice' => $this->invoice,
-                'viewUrl' => $this->getPublicViewUrl(),
-                'includeViewOnlineButton' => $this->includeViewOnlineButton,
-            ],
-        );
+        $html = view('emails.custom-document', [
+            'customBody' => $body,
+            'invoice' => $this->invoice,
+            'viewUrl' => $this->getPublicViewUrl(),
+            'includeViewOnlineButton' => $this->includeViewOnlineButton,
+        ])->render();
+
+        return (new CssToInlineStyles)->convert($html);
     }
 
     public function attachments(): array
