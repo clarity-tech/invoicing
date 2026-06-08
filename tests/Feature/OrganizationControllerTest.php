@@ -4,6 +4,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Organization;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     $this->user = createUserWithTeam();
@@ -81,6 +82,20 @@ test('can update organization basics', function () {
     expect($organization->phone)->toBe('+1-555-9999');
     expect($organization->emails->getFirstEmail())->toBe('updated@test.com');
     expect($organization->currency->value)->toBe('USD');
+});
+
+test('accepts a website without a scheme and stores it as a full url', function () {
+    $organization = createOrganizationWithLocation([], [], $this->user);
+
+    $this->put("/organizations/{$organization->id}", [
+        'name' => 'Updated Org Name',
+        'emails' => ['updated@test.com'],
+        'currency' => 'INR',
+        'country_code' => 'IN',
+        'website' => 'example.com',
+    ])->assertSessionHasNoErrors();
+
+    expect($organization->refresh()->website)->toBe('https://example.com');
 });
 
 test('can update the company name independently of the organization name', function () {
@@ -347,6 +362,47 @@ test('can upload organization logo', function () {
     $organization->refresh();
     expect($organization->getFirstMedia('logo'))->not->toBeNull();
     expect($organization->logo_url)->not->toBeNull();
+});
+
+test('can upload SVG organization logo', function () {
+    $organization = createOrganizationWithLocation([], [], $this->user);
+
+    $svg = '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#000"/></svg>';
+    $file = UploadedFile::fake()->createWithContent('logo.svg', $svg);
+
+    $response = $this->post("/organizations/{$organization->id}/logo", [
+        'logo' => $file,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    $organization->refresh();
+    expect($organization->getFirstMedia('logo'))->not->toBeNull();
+});
+
+test('sanitizes malicious SVG logo before storing', function () {
+    $organization = createOrganizationWithLocation([], [], $this->user);
+
+    $malicious = '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)" width="100" height="100"><script>alert(document.cookie)</script><rect width="100" height="100"/></svg>';
+    $file = UploadedFile::fake()->createWithContent('logo.svg', $malicious);
+
+    $response = $this->post("/organizations/{$organization->id}/logo", [
+        'logo' => $file,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    $organization->refresh();
+    $media = $organization->getFirstMedia('logo');
+    $stored = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+
+    expect($stored)
+        ->not->toContain('<script')
+        ->not->toContain('onload')
+        ->not->toContain('alert(')
+        ->toContain('<rect');
 });
 
 test('validates logo file type', function () {
