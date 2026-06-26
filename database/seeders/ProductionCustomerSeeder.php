@@ -29,7 +29,8 @@ class ProductionCustomerSeeder extends Seeder
         // Create RxNow Pharmacy LLC (Dubai customer)
         $rxnowCustomer = Customer::create([
             'name' => 'RxNow Pharmacy LLC',
-            'phone' => '+971-4-5551234',
+            'phone' => '+97145551234',
+            'phone_country' => 'AE',
             'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.ae'], ['name' => 'Info', 'email' => 'info@rxnow.ae']]),
             'organization_id' => $clarityOrg->id,
         ]);
@@ -51,7 +52,8 @@ class ProductionCustomerSeeder extends Seeder
         // Create DocOnline Health India Private Limited (Bangalore customer)
         $docOnlineCustomer = Customer::create([
             'name' => 'DOCONLINE HEALTH INDIA PRIVATE LIMITED',
-            'phone' => '+91-80-4567-8901',
+            'phone' => '+918045678901',
+            'phone_country' => 'IN',
             'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@doconline.in'], ['name' => 'Accounts', 'email' => 'accounts@doconline.in']]),
             'organization_id' => $clarityOrg->id,
         ]);
@@ -74,7 +76,8 @@ class ProductionCustomerSeeder extends Seeder
         // Create Krishna Institute of Medical Sciences Limited (Hyderabad customer)
         $krishnaCustomer = Customer::create([
             'name' => 'Krishna Institute of Medical Sciences Limited',
-            'phone' => '+91-40-4567-8901',
+            'phone' => '+914045678901',
+            'phone_country' => 'IN',
             'emails' => new ContactCollection([['name' => 'Procurement', 'email' => 'procurement@kims.in'], ['name' => 'Finance', 'email' => 'finance@kims.in']]),
             'organization_id' => $clarityOrg->id,
         ]);
