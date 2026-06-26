@@ -94,7 +94,8 @@ class CustomerSeeder extends ProductionSafeSeeder
                 ->create([
                     'name' => 'RxNow LLC',
                     'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.test'], ['name' => 'Finance', 'email' => 'finance@rxnow.test']]),
-                    'phone' => '+971-4-1234567',
+                    'phone' => '+97141234567',
+                    'phone_country' => 'AE',
                 ]);
 
             // Create Dubai location for RxNow
@@ -119,7 +120,8 @@ class CustomerSeeder extends ProductionSafeSeeder
                 ->create([
                     'name' => '1115inc',
                     'emails' => new ContactCollection([['name' => 'Ayshwarya', 'email' => 'ayshwarya@1115inc.test'], ['name' => 'Consultant', 'email' => 'consult@1115inc.test']]),
-                    'phone' => '+971-4-7654321',
+                    'phone' => '+97147654321',
+                    'phone_country' => 'AE',
                 ]);
 
             $location1115 = Location::create([
