@@ -1381,7 +1381,7 @@ const orgContacts = computed<Contact[]>(
                 >
                 <textarea
                     v-model="form.notes"
-                    rows="4"
+                    rows="1"
                     placeholder="Enter notes for the customer..."
                     class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
@@ -1400,7 +1400,7 @@ const orgContacts = computed<Contact[]>(
                 >
                 <textarea
                     v-model="form.terms"
-                    rows="3"
+                    rows="2"
                     placeholder="e.g. Payment due within 7 days..."
                     class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
