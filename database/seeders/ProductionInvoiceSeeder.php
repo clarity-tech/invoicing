@@ -53,7 +53,10 @@ class ProductionInvoiceSeeder extends Seeder
             'subtotal' => 367500, // AED 3,675.00
             'tax' => 18375, // 5% VAT
             'total' => 385875, // AED 3,858.75
-            'email_recipients' => ['billing@rxnow.ae', 'info@rxnow.ae'],
+            'email_recipients' => [
+                ['email' => 'billing@rxnow.ae', 'checked' => true],
+                ['email' => 'info@rxnow.ae', 'checked' => true],
+            ],
             'notes' => 'Healthcare management system implementation and support services.',
             'terms' => 'Payment due within 30 days. Late payments subject to 1.5% monthly interest.',
         ]);
@@ -91,7 +94,10 @@ class ProductionInvoiceSeeder extends Seeder
             'subtotal' => 12500000, // INR 1,25,000.00
             'tax' => 2250000, // 18% GST
             'total' => 14750000, // INR 1,47,500.00
-            'email_recipients' => ['billing@doconline.in', 'accounts@doconline.in'],
+            'email_recipients' => [
+                ['email' => 'billing@doconline.in', 'checked' => true],
+                ['email' => 'accounts@doconline.in', 'checked' => true],
+            ],
             'notes' => 'Digital health platform development and integration services.',
             'terms' => 'Payment due within 30 days. GST as applicable.',
         ]);
@@ -129,7 +135,10 @@ class ProductionInvoiceSeeder extends Seeder
             'subtotal' => 20000000, // INR 2,00,000.00
             'tax' => 3600000, // 18% GST
             'total' => 23600000, // INR 2,36,000.00
-            'email_recipients' => ['procurement@kims.in', 'finance@kims.in'],
+            'email_recipients' => [
+                ['email' => 'procurement@kims.in', 'checked' => true],
+                ['email' => 'finance@kims.in', 'checked' => true],
+            ],
             'notes' => 'Hospital management system with patient records and billing integration.',
             'terms' => 'Estimate valid for 30 days. 50% advance required upon acceptance.',
         ]);
