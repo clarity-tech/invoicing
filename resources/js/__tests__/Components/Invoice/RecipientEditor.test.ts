@@ -120,6 +120,47 @@ describe('Invoice/RecipientEditor', () => {
         expect(wrapper.emitted('update:modelValue')).toBeFalsy();
     });
 
+    it('adds a typed email on Tab', async () => {
+        const wrapper = mount(RecipientEditor, {
+            props: { modelValue: [], contacts },
+        });
+
+        const input = wrapper.find('input[type="email"]');
+        await input.setValue('new@outside.test');
+        await input.trigger('keydown.tab');
+
+        expect(lastEmitted(wrapper)).toEqual([
+            { email: 'new@outside.test', checked: true },
+        ]);
+    });
+
+    it('adds a typed email when the field is blurred', async () => {
+        const wrapper = mount(RecipientEditor, {
+            props: { modelValue: [], contacts },
+        });
+
+        const input = wrapper.find('input[type="email"]');
+        await input.setValue('new@outside.test');
+        await input.trigger('blur');
+
+        expect(lastEmitted(wrapper)).toEqual([
+            { email: 'new@outside.test', checked: true },
+        ]);
+    });
+
+    it('shows an error and does not add an invalid email', async () => {
+        const wrapper = mount(RecipientEditor, {
+            props: { modelValue: [], contacts },
+        });
+
+        const input = wrapper.find('input[type="email"]');
+        await input.setValue('not-an-email');
+        await input.trigger('keydown.enter');
+
+        expect(wrapper.emitted('update:modelValue')).toBeFalsy();
+        expect(wrapper.text()).toContain('Please enter a valid email address');
+    });
+
     it('checks every recipient when "Select all" is clicked', async () => {
         const wrapper = mount(RecipientEditor, {
             props: {

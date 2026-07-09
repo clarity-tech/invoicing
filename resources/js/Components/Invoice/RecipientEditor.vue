@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { isValidEmail } from '@/lib/utils';
 import type { Contact, EmailRecipient } from '@/types';
 
 const props = withDefaults(
@@ -22,6 +23,12 @@ const model = defineModel<EmailRecipient[]>({ required: true });
 
 const query = ref('');
 const open = ref(false);
+const error = ref('');
+
+// Clear the validation error as soon as the user edits the field again.
+watch(query, () => {
+    error.value = '';
+});
 
 const contactByEmail = computed(() => {
     const map = new Map<string, Contact>();
@@ -88,15 +95,49 @@ function has(email: string): boolean {
 function addEmail(email: string): void {
     const trimmed = email.trim();
 
-    if (trimmed && !has(trimmed)) {
+    if (!trimmed) {
+        query.value = '';
+        error.value = '';
+
+        return;
+    }
+
+    if (!isValidEmail(trimmed)) {
+        // Keep the text so the user can correct it, and surface the error.
+        error.value = 'Please enter a valid email address';
+
+        return;
+    }
+
+    if (!has(trimmed)) {
         model.value = [...model.value, { email: trimmed, checked: true }];
     }
 
     query.value = '';
+    error.value = '';
 }
 
 function addTyped(): void {
     addEmail(query.value);
+}
+
+// Tab commits the typed email (like Enter) when there is text, otherwise it
+// falls through to normal focus navigation.
+function onTab(event: KeyboardEvent): void {
+    if (query.value.trim()) {
+        event.preventDefault();
+        addTyped();
+    }
+}
+
+// Leaving the field commits whatever was typed. Suggestion items use
+// mousedown.prevent, so picking one does not trigger this blur.
+function onBlur(): void {
+    open.value = false;
+
+    if (query.value.trim()) {
+        addTyped();
+    }
 }
 
 // Suggestions not already in the list, matching the typed query, deduped by email.
@@ -144,6 +185,49 @@ const availableSuggestions = computed(() => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+            <div class="relative">
+                <input
+                    v-model="query"
+                    type="email"
+                    placeholder="Add email"
+                    class="w-48 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    @focus="open = true"
+                    @blur="onBlur"
+                    @keydown.enter.prevent="addTyped"
+                    @keydown.tab="onTab"
+                    @keydown.esc="open = false"
+                />
+
+                <!-- Known contacts/org addresses not already in the list. -->
+                <ul
+                    v-if="open && availableSuggestions.length > 0"
+                    class="absolute z-10 mt-1 max-h-48 w-56 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                >
+                    <li
+                        v-for="contact in availableSuggestions"
+                        :key="contact.email"
+                    >
+                        <!-- mousedown.prevent keeps focus so @blur doesn't close
+                             the list before the click registers. -->
+                        <button
+                            type="button"
+                            class="flex w-full flex-col items-start px-3 py-1.5 text-left hover:bg-gray-50"
+                            @mousedown.prevent
+                            @click="addEmail(contact.email)"
+                        >
+                            <span
+                                v-if="contact.name"
+                                class="text-sm text-gray-900"
+                                >{{ contact.name }}</span
+                            >
+                            <span class="text-xs text-gray-500">{{
+                                contact.email
+                            }}</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
             <label
                 v-for="recipient in model"
                 :key="recipient.email"
@@ -202,48 +286,8 @@ const availableSuggestions = computed(() => {
                     </svg>
                 </button>
             </label>
-
-            <div class="relative">
-                <input
-                    v-model="query"
-                    type="email"
-                    placeholder="Add email"
-                    class="w-48 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                    @focus="open = true"
-                    @blur="open = false"
-                    @keydown.enter.prevent="addTyped"
-                    @keydown.esc="open = false"
-                />
-
-                <!-- Known contacts/org addresses not already in the list. -->
-                <ul
-                    v-if="open && availableSuggestions.length > 0"
-                    class="absolute z-10 mt-1 max-h-48 w-56 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg"
-                >
-                    <li
-                        v-for="contact in availableSuggestions"
-                        :key="contact.email"
-                    >
-                        <!-- mousedown.prevent keeps focus so @blur doesn't close
-                             the list before the click registers. -->
-                        <button
-                            type="button"
-                            class="flex w-full flex-col items-start px-3 py-1.5 text-left hover:bg-gray-50"
-                            @mousedown.prevent
-                            @click="addEmail(contact.email)"
-                        >
-                            <span
-                                v-if="contact.name"
-                                class="text-sm text-gray-900"
-                                >{{ contact.name }}</span
-                            >
-                            <span class="text-xs text-gray-500">{{
-                                contact.email
-                            }}</span>
-                        </button>
-                    </li>
-                </ul>
-            </div>
         </div>
+
+        <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>
     </div>
 </template>
