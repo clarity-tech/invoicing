@@ -20,19 +20,21 @@ class ProductionUserSeeder extends Seeder
         $this->command->info('Creating Clarity Technologies organization and users...');
 
         // Create Clarity Technologies organization owner user
-        $clarityOwner = User::create([
-            'name' => 'Manash Sonowal',
+        $clarityOwner = User::firstOrCreate([
             'email' => 'manash@claritytech.io',
+        ], [
+            'name' => 'Manash Sonowal',
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
             'current_team_id' => null,
         ]);
 
         // Create Clarity Technologies organization
-        $clarityOrg = Organization::create([
+        $clarityOrg = Organization::firstOrCreate([
+            'company_name' => 'Clarity Technologies',
+        ], [
             'name' => 'Clarity Technologies',
             'user_id' => $clarityOwner->id,
-            'company_name' => 'Clarity Technologies',
             'tax_number' => '18ASBPB0118P1ZX',
             'registration_number' => 'U74999AS2020PTC009876',
             'emails' => new ContactCollection([['name' => 'Accounts', 'email' => 'accounts@claritytech.io'], ['name' => 'Manash', 'email' => 'manash@claritytech.io']]),
@@ -61,32 +63,34 @@ class ProductionUserSeeder extends Seeder
         $clarityOwner->update(['current_team_id' => $clarityOrg->id]);
 
         // Create Clarity Technologies head office location
-        $clarityLocation = Location::create([
+        $clarityLocation = Location::firstOrCreate([
+            'locatable_type' => Organization::class,
+            'locatable_id' => $clarityOrg->id,
             'name' => 'Clarity Technologies Head Office',
+        ], [
             'address_line_1' => 'Kushal Nagar Namghar Path, House No: 110',
             'address_line_2' => 'Ground Floor',
             'city' => 'Moranhat',
             'state' => 'Assam',
             'country' => 'IN',
             'postal_code' => '785675',
-            'locatable_type' => Organization::class,
-            'locatable_id' => $clarityOrg->id,
         ]);
 
         // Update organization with primary location
         $clarityOrg->update(['primary_location_id' => $clarityLocation->id]);
 
         // Create accounts user
-        $accountsUser = User::create([
-            'name' => 'Accounts Department',
+        $accountsUser = User::firstOrCreate([
             'email' => 'accounts@claritytech.io',
+        ], [
+            'name' => 'Accounts Department',
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
             'current_team_id' => $clarityOrg->id,
         ]);
 
         // Add accounts user as team member
-        $clarityOrg->users()->attach($accountsUser, ['role' => 'admin']);
+        $clarityOrg->users()->syncWithoutDetaching([$accountsUser->id => ['role' => 'admin']]);
 
         $this->command->info('✓ Created Clarity Technologies organization');
         $this->command->info('✓ Owner: manash@claritytech.io (password: password)');

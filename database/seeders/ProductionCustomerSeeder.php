@@ -27,15 +27,16 @@ class ProductionCustomerSeeder extends Seeder
         }
 
         // Create RxNow Pharmacy LLC (Dubai customer)
-        $rxnowCustomer = Customer::create([
+        $rxnowCustomer = Customer::firstOrCreate([
+            'organization_id' => $clarityOrg->id,
             'name' => 'RxNow Pharmacy LLC',
+        ], [
             'phone' => '+97145551234',
             'phone_country' => 'AE',
             'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.ae'], ['name' => 'Info', 'email' => 'info@rxnow.ae']]),
-            'organization_id' => $clarityOrg->id,
         ]);
 
-        $rxnowLocation = Location::create([
+        $rxnowLocation = $this->locationFor($rxnowCustomer, [
             'name' => 'RxNow Pharmacy LLC',
             'address_line_1' => 'Shop 12, The Wings block B',
             'address_line_2' => 'Arjan',
@@ -43,22 +44,21 @@ class ProductionCustomerSeeder extends Seeder
             'state' => 'Dubai',
             'country' => 'AE',
             'postal_code' => '00000',
-            'locatable_type' => Customer::class,
-            'locatable_id' => $rxnowCustomer->id,
         ]);
 
         $rxnowCustomer->update(['primary_location_id' => $rxnowLocation->id]);
 
         // Create DocOnline Health India Private Limited (Bangalore customer)
-        $docOnlineCustomer = Customer::create([
+        $docOnlineCustomer = Customer::firstOrCreate([
+            'organization_id' => $clarityOrg->id,
             'name' => 'DOCONLINE HEALTH INDIA PRIVATE LIMITED',
+        ], [
             'phone' => '+918045678901',
             'phone_country' => 'IN',
             'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@doconline.in'], ['name' => 'Accounts', 'email' => 'accounts@doconline.in']]),
-            'organization_id' => $clarityOrg->id,
         ]);
 
-        $docOnlineLocation = Location::create([
+        $docOnlineLocation = $this->locationFor($docOnlineCustomer, [
             'name' => 'DocOnline Health India Pvt Ltd',
             'address_line_1' => '6th Floor, Unit nos 3 & 4. Vayudooth Chambers 15 & 16',
             'address_line_2' => 'Trinity Junction, Mahatma Gandhi Rd',
@@ -67,22 +67,21 @@ class ProductionCustomerSeeder extends Seeder
             'country' => 'IN',
             'postal_code' => '560001',
             'tax_id' => '29AAFCD9711R1ZV',
-            'locatable_type' => Customer::class,
-            'locatable_id' => $docOnlineCustomer->id,
         ]);
 
         $docOnlineCustomer->update(['primary_location_id' => $docOnlineLocation->id]);
 
         // Create Krishna Institute of Medical Sciences Limited (Hyderabad customer)
-        $krishnaCustomer = Customer::create([
+        $krishnaCustomer = Customer::firstOrCreate([
+            'organization_id' => $clarityOrg->id,
             'name' => 'Krishna Institute of Medical Sciences Limited',
+        ], [
             'phone' => '+914045678901',
             'phone_country' => 'IN',
             'emails' => new ContactCollection([['name' => 'Procurement', 'email' => 'procurement@kims.in'], ['name' => 'Finance', 'email' => 'finance@kims.in']]),
-            'organization_id' => $clarityOrg->id,
         ]);
 
-        $krishnaLocation = Location::create([
+        $krishnaLocation = $this->locationFor($krishnaCustomer, [
             'name' => 'Krishna Institute of Medical Sciences Limited',
             'address_line_1' => '1-8-31/1, MINISTER ROAD',
             'address_line_2' => null,
@@ -91,8 +90,6 @@ class ProductionCustomerSeeder extends Seeder
             'country' => 'IN',
             'postal_code' => '500003',
             'tax_id' => '36AACCK2540G1ZU',
-            'locatable_type' => Customer::class,
-            'locatable_id' => $krishnaCustomer->id,
         ]);
 
         $krishnaCustomer->update(['primary_location_id' => $krishnaLocation->id]);
@@ -110,5 +107,20 @@ class ProductionCustomerSeeder extends Seeder
         $this->command->info('  GSTIN: 36AACCK2540G1ZU');
 
         $this->command->info('Production customers created successfully!');
+    }
+
+    /**
+     * Create (or reuse) a customer's location. Matched on the owning customer
+     * and location name so the seeder stays safe to re-run.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function locationFor(Customer $customer, array $attributes): Location
+    {
+        return Location::firstOrCreate([
+            'locatable_type' => Customer::class,
+            'locatable_id' => $customer->id,
+            'name' => $attributes['name'],
+        ], $attributes);
     }
 }
