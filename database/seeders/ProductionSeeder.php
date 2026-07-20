@@ -23,6 +23,7 @@ class ProductionSeeder extends Seeder
 
             if (! $this->command->confirm('Do you want to continue?', false)) {
                 $this->command->info('Production seeding cancelled.');
+                $this->command->info('Note: a non-interactive run takes the default answer, which is "no".');
 
                 return;
             }
@@ -31,8 +32,8 @@ class ProductionSeeder extends Seeder
         // Show what will be created
         $this->command->info('Creating production data:');
         $this->command->info('• Clarity Technologies organization with real business details');
-        $this->command->info('• Real customers (RxNow LLC, Techno Park, etc.)');
-        $this->command->info('• Sample invoices in INR and AED currencies');
+        $this->command->info('• Real customers (RxNow Pharmacy LLC, DocOnline Health India, Krishna Institute)');
+        $this->command->info('• Sample invoices and an estimate in INR and AED');
 
         $startTime = microtime(true);
 
@@ -47,6 +48,7 @@ class ProductionSeeder extends Seeder
         $executionTime = round($endTime - $startTime, 2);
 
         $this->command->info("✅ Production seeders completed successfully in {$executionTime} seconds!");
-        $this->command->info('Login with: admin@claritytech.io (password: password)');
+        $this->command->info('Login with: manash@claritytech.io or accounts@claritytech.io (password: password)');
+        $this->command->info('Safe to re-run: existing records are matched rather than duplicated.');
     }
 }
