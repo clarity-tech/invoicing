@@ -194,7 +194,7 @@ sail bun run types:check
 - Polymorphic `Location` model serves organizations and customers
 - ULID identifiers for public document sharing (better performance than UUID)
 - Integer-based monetary storage (cents) to avoid floating-point precision issues
-- Flexible tax system (no enums) supporting multi-country tax templates
+- Country-driven tax rates served from the Country enum, with the Indian GST split derived from the place of supply
 - Simple JSON arrays for email recipients and tax breakdowns
 
 **Key Relationships:**
@@ -202,7 +202,8 @@ sail bun run types:check
 Organization (teams table) -> Location (polymorphic, primary location)
 Organization -> Customer (one-to-many)
 Organization -> Invoice (one-to-many)
-Organization -> TaxTemplate (one-to-many)
+Organization -> EmailTemplate (one-to-many, overrides only)
+Invoice -> Payment (one-to-many)
 Customer -> Location (polymorphic, primary location)  
 Invoice -> Organization (belongs to)
 Invoice -> Customer (belongs to)
@@ -210,10 +211,10 @@ Invoice -> Location (organization & customer locations)
 Invoice -> InvoiceItem (one-to-many)
 
 # Current Demo Data:
-- 8 Organizations across different currencies (USD, EUR, INR, AED)
-- 30+ Customers including UAE: RxNow LLC, 1115inc
-- 160+ Invoices and estimates
-- Currency-specific tax templates for all supported countries
+- 10 Organizations across different currencies (USD, EUR, INR, AED), one still mid-onboarding
+- 35+ Customers including UAE: RxNow LLC, 1115inc
+- 70+ Invoices and estimates covering every status, with payments, GST breakdowns and attachments
+- Country-specific tax rates for all supported countries
 ```
 
 ### Development Guidelines
@@ -222,7 +223,7 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current: 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
+- Current: 1,163 test cases (Unit + Feature), plus browser tests
 - Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
@@ -300,12 +301,14 @@ it('user can access feature', function () {
 ### Key Components
 
 **Models:**
-- `Organization` - Business entities (renamed from Team) with polymorphic locations, ContactCollection contacts, tax templates, and multi-currency support including AED
+- `Organization` - Business entities (renamed from Team) with polymorphic locations, ContactCollection contacts, bank details, and multi-currency support including AED
 - `Customer` - Customer entities with polymorphic locations, belonging to organizations (includes UAE customers: RxNow LLC, 1115inc)
 - `Location` - Polymorphic model serving organizations and customers
 - `Invoice` - Unified model for invoices/estimates with organization relationship, flexible tax types, and JSON email recipients
-- `InvoiceItem` - Line items with quantity, unit_price, tax_rate calculations
-- `TaxTemplate` - Multi-country tax templates per organization with flexible categories (includes UAE VAT and Excise taxes)
+- `InvoiceItem` - Line items with quantity, unit_price, SAC code and tax_rate (basis points: 1800 = 18%)
+- `Payment` - Payments recorded against an invoice, driving amount_paid and the paid/partially paid status
+- `EmailTemplate` - Per-organization overrides of the built-in document email templates
+- `ExchangeRate` - Daily USD-based rates, fetched by the `app:fetch-exchange-rates` command
 
 **Value Objects:**
 - `ContactCollection` - Immutable collection with validation for multiple contacts (name + email)
@@ -358,14 +361,14 @@ it('user can access feature', function () {
 **Multi-Currency Support:**
 - 9 supported currencies: INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED
 - Currency enum with symbols and names
-- Tax templates per currency (UAE VAT 5%, India GST 18%, etc.)
-- Automatic tax rate selection based on organization currency
+- Tax rates per country served from Country::taxOptions() (UAE VAT 5%, India GST 18%, etc.)
+- Tax rate options follow the organization's country
 
 **Database Insights:**
 - MySQL 8.4 with proper foreign key constraints
 - Uses `RefreshDatabase` trait in ALL tests for isolation
 - ULID primary keys for public document sharing
-- Decimal(5,3) for tax_rate to support high rates (up to 99.999%)
+- Integer basis points for tax_rate (1800 = 18%), on both invoice items and TDS/TCS rates
 - Currency enum fields for type safety
 - JSON email collections with custom cast validation
 
@@ -390,7 +393,7 @@ it('user can access feature', function () {
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 957+ test cases (950 Unit/Feature + browser tests), 83.2% backend coverage
+- 1,163 test cases (Unit + Feature), plus browser tests
 - Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
 - Feature tests use `assertInertia()` for Inertia response assertions
 - Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
@@ -452,18 +455,21 @@ resources/js/
 - Screenshots stored in `tests/Browser/Screenshots/`
 
 ## Demo Data Summary
-- **Organizations**: 8 organizations with different currencies
+- **Organizations**: 10 organizations with different currencies
   - Dubai Trading LLC (AED) with customers: RxNow LLC, 1115inc
   - ACME Manufacturing Corp (USD)
   - TechStart Innovation Hub (USD)
   - EuroConsult GmbH (EUR)
   - Demo Company Ltd (INR)
-- **Tax Templates**: Currency-specific templates
-  - AED: VAT 5%, VAT 0%, VAT Exempt, Excise Tax 50/99%
-  - INR: CGST 9%, SGST 9%, IGST 18%, GST 5/12/28%, TDS 10%
-  - USD: Sales Tax 4/6/8.25%, No Tax
-  - EUR: VAT 7/19%, VAT 0%
-  - GBP: VAT 5/20%, VAT 0%
+  - Fresh Start Studio (INR) — setup deliberately incomplete, for the onboarding wizard
+- **Tax rates**: Served per country by `Country::taxOptions()`, not stored per organization
+  - IN: GST 0/5/18/40%, plus CGST/SGST/UTGST/IGST derived from the place of supply
+  - AE: VAT 0/5%
+  - US: Sales Tax 0/4/6/8.25%
+  - EU/GB: VAT rates per country
+- **Also seeded**: payments and part payments, organization logos and invoice attachments,
+  bank details, customized email templates, 190 days of exchange rates, and one archived
+  customer and invoice
 
 ## Invoice Numbering Series
 
@@ -589,7 +595,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Always use curly braces for control structures, even for single-line bodies.
 - Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
 - Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
-- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
+- Follow existing application Enum naming conventions.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
 
