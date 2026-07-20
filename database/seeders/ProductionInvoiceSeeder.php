@@ -4,12 +4,16 @@ namespace Database\Seeders;
 
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Organization;
+use App\Services\InvoiceCalculator;
 use Illuminate\Database\Seeder;
 
 class ProductionInvoiceSeeder extends Seeder
 {
+    public function __construct(
+        private readonly InvoiceCalculator $calculator,
+    ) {}
+
     /**
      * Run the production invoice seeds.
      */
@@ -37,132 +41,133 @@ class ProductionInvoiceSeeder extends Seeder
             return;
         }
 
-        // Create sample invoice for RxNow (AED - Dubai customer)
-        $rxnowInvoice = Invoice::create([
-            'organization_id' => $clarityOrg->id,
-            'organization_location_id' => $clarityOrg->primary_location_id,
-            'customer_id' => $rxnowCustomer->id,
-            'customer_location_id' => $rxnowCustomer->primary_location_id,
-            'customer_shipping_location_id' => $rxnowCustomer->primary_location_id,
+        // Sample invoice for RxNow (AED - Dubai customer)
+        $rxnowInvoice = $this->createDocument($clarityOrg, $rxnowCustomer, [
             'invoice_number' => 'CT-INV-001',
+            'type' => 'invoice',
+            'status' => 'sent',
+            'currency' => 'AED',
             'issued_at' => now()->subDays(15),
             'due_at' => now()->addDays(15),
-            'status' => 'sent',
-            'type' => 'invoice',
-            'currency' => 'AED',
-            'subtotal' => 367500, // AED 3,675.00
-            'tax' => 18375, // 5% VAT
-            'total' => 385875, // AED 3,858.75
             'email_recipients' => [
                 ['email' => 'billing@rxnow.ae', 'checked' => true],
                 ['email' => 'info@rxnow.ae', 'checked' => true],
             ],
             'notes' => 'Healthcare management system implementation and support services.',
             'terms' => 'Payment due within 30 days. Late payments subject to 1.5% monthly interest.',
+        ], [
+            [
+                'description' => 'Healthcare Management System - Annual License',
+                'quantity' => 1,
+                'unit_price' => 245000, // AED 2,450.00
+                'tax_rate' => 500, // 5% UAE VAT
+            ],
+            [
+                'description' => 'System Implementation & Training',
+                'quantity' => 1,
+                'unit_price' => 122500, // AED 1,225.00
+                'tax_rate' => 500, // 5% UAE VAT
+            ],
         ]);
 
-        // Add invoice items for RxNow
-        InvoiceItem::create([
-            'invoice_id' => $rxnowInvoice->id,
-            'description' => 'Healthcare Management System - Annual License',
-            'quantity' => 1,
-            'unit_price' => 245000, // AED 2,450.00
-            'tax_rate' => 5.000, // 5% UAE VAT
-        ]);
-
-        InvoiceItem::create([
-            'invoice_id' => $rxnowInvoice->id,
-            'description' => 'System Implementation & Training',
-            'quantity' => 1,
-            'unit_price' => 122500, // AED 1,225.00
-            'tax_rate' => 5.000, // 5% UAE VAT
-        ]);
-
-        // Create sample invoice for DocOnline (INR - Bangalore customer)
-        $docOnlineInvoice = Invoice::create([
-            'organization_id' => $clarityOrg->id,
-            'organization_location_id' => $clarityOrg->primary_location_id,
-            'customer_id' => $docOnlineCustomer->id,
-            'customer_location_id' => $docOnlineCustomer->primary_location_id,
-            'customer_shipping_location_id' => $docOnlineCustomer->primary_location_id,
+        // Sample invoice for DocOnline (INR - Bangalore customer)
+        $docOnlineInvoice = $this->createDocument($clarityOrg, $docOnlineCustomer, [
             'invoice_number' => 'CT-INV-002',
+            'type' => 'invoice',
+            'status' => 'draft',
+            'currency' => 'INR',
             'issued_at' => now()->subDays(10),
             'due_at' => now()->addDays(20),
-            'status' => 'draft',
-            'type' => 'invoice',
-            'currency' => 'INR',
-            'subtotal' => 12500000, // INR 1,25,000.00
-            'tax' => 2250000, // 18% GST
-            'total' => 14750000, // INR 1,47,500.00
             'email_recipients' => [
                 ['email' => 'billing@doconline.in', 'checked' => true],
                 ['email' => 'accounts@doconline.in', 'checked' => true],
             ],
             'notes' => 'Digital health platform development and integration services.',
             'terms' => 'Payment due within 30 days. GST as applicable.',
+        ], [
+            [
+                'description' => 'Digital Health Platform Development',
+                'quantity' => 1,
+                'unit_price' => 10000000, // INR 1,00,000.00
+                'tax_rate' => 1800, // 18% GST
+            ],
+            [
+                'description' => 'API Integration & Testing',
+                'quantity' => 1,
+                'unit_price' => 2500000, // INR 25,000.00
+                'tax_rate' => 1800, // 18% GST
+            ],
         ]);
 
-        // Add invoice items for DocOnline
-        InvoiceItem::create([
-            'invoice_id' => $docOnlineInvoice->id,
-            'description' => 'Digital Health Platform Development',
-            'quantity' => 1,
-            'unit_price' => 10000000, // INR 1,00,000.00
-            'tax_rate' => 18.000, // 18% GST
-        ]);
-
-        InvoiceItem::create([
-            'invoice_id' => $docOnlineInvoice->id,
-            'description' => 'API Integration & Testing',
-            'quantity' => 1,
-            'unit_price' => 2500000, // INR 25,000.00
-            'tax_rate' => 18.000, // 18% GST
-        ]);
-
-        // Create sample estimate for Krishna Institute (INR - Hyderabad customer)
-        $krishnaEstimate = Invoice::create([
-            'organization_id' => $clarityOrg->id,
-            'organization_location_id' => $clarityOrg->primary_location_id,
-            'customer_id' => $krishnaCustomer->id,
-            'customer_location_id' => $krishnaCustomer->primary_location_id,
-            'customer_shipping_location_id' => $krishnaCustomer->primary_location_id,
+        // Sample estimate for Krishna Institute (INR - Hyderabad customer)
+        $krishnaEstimate = $this->createDocument($clarityOrg, $krishnaCustomer, [
             'invoice_number' => 'CT-EST-001',
+            'type' => 'estimate',
+            'status' => 'draft',
+            'currency' => 'INR',
             'issued_at' => now()->subDays(5),
             'due_at' => now()->addDays(25),
-            'status' => 'draft',
-            'type' => 'estimate',
-            'currency' => 'INR',
-            'subtotal' => 20000000, // INR 2,00,000.00
-            'tax' => 3600000, // 18% GST
-            'total' => 23600000, // INR 2,36,000.00
             'email_recipients' => [
                 ['email' => 'procurement@kims.in', 'checked' => true],
                 ['email' => 'finance@kims.in', 'checked' => true],
             ],
             'notes' => 'Hospital management system with patient records and billing integration.',
             'terms' => 'Estimate valid for 30 days. 50% advance required upon acceptance.',
+        ], [
+            [
+                'description' => 'Hospital Management System - Core Module',
+                'quantity' => 1,
+                'unit_price' => 15000000, // INR 1,50,000.00
+                'tax_rate' => 1800, // 18% GST
+            ],
+            [
+                'description' => 'Patient Records & Billing Integration',
+                'quantity' => 1,
+                'unit_price' => 5000000, // INR 50,000.00
+                'tax_rate' => 1800, // 18% GST
+            ],
         ]);
 
-        // Add estimate items for Krishna Institute
-        InvoiceItem::create([
-            'invoice_id' => $krishnaEstimate->id,
-            'description' => 'Hospital Management System - Core Module',
-            'quantity' => 1,
-            'unit_price' => 15000000, // INR 1,50,000.00
-            'tax_rate' => 18.000, // 18% GST
-        ]);
-
-        InvoiceItem::create([
-            'invoice_id' => $krishnaEstimate->id,
-            'description' => 'Patient Records & Billing Integration',
-            'quantity' => 1,
-            'unit_price' => 5000000, // INR 50,000.00
-            'tax_rate' => 18.000, // 18% GST
-        ]);
-
-        $this->command->info('✓ Created invoice CT-INV-001 for RxNow Pharmacy LLC (AED 3,858.75)');
-        $this->command->info('✓ Created invoice CT-INV-002 for DocOnline Health India (INR 1,47,500.00)');
-        $this->command->info('✓ Created estimate CT-EST-001 for Krishna Institute (INR 2,36,000.00)');
+        $this->command->info("✓ Created invoice {$rxnowInvoice->invoice_number} for RxNow Pharmacy LLC ({$rxnowInvoice->formatted_total})");
+        $this->command->info("✓ Created invoice {$docOnlineInvoice->invoice_number} for DocOnline Health India ({$docOnlineInvoice->formatted_total})");
+        $this->command->info("✓ Created estimate {$krishnaEstimate->invoice_number} for Krishna Institute ({$krishnaEstimate->formatted_total})");
         $this->command->info('Sample invoices and estimates created successfully!');
+    }
+
+    /**
+     * Create a document and its line items, then derive the header totals from
+     * those items so the two can never drift apart. Safe to re-run: documents
+     * are matched on their organization, number and type.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  array<int, array{description: string, quantity: int, unit_price: int, tax_rate: int}>  $items
+     */
+    private function createDocument(Organization $organization, Customer $customer, array $attributes, array $items): Invoice
+    {
+        $invoice = Invoice::firstOrCreate(
+            [
+                'organization_id' => $organization->id,
+                'invoice_number' => $attributes['invoice_number'],
+                'type' => $attributes['type'],
+            ],
+            [
+                ...$attributes,
+                'organization_location_id' => $organization->primary_location_id,
+                'customer_id' => $customer->id,
+                'customer_location_id' => $customer->primary_location_id,
+                'customer_shipping_location_id' => $customer->primary_location_id,
+                'subtotal' => 0,
+                'tax' => 0,
+                'total' => 0,
+            ]
+        );
+
+        if ($invoice->items()->doesntExist()) {
+            $invoice->items()->createMany($items);
+        }
+
+        $this->calculator->recalculateInvoice($invoice)->save();
+
+        return $invoice;
     }
 }
