@@ -306,6 +306,37 @@ token and return 200.
       deliberately left alone. `pint`, `eslint` and `prettier` all pass; ESLint
       flagged the new `worker.js`, which was fixed and redeployed so the live
       Worker matches the committed source.
+- [x] **V4 SMTP verified** — without sending a test invoice, and without gcloud.
+      Registration (`POST /register` → **201**) and password reset
+      (`POST /forgot-password` → **200**, *"We have emailed your password reset
+      link."*) both send mail **synchronously**: neither
+      `Illuminate\Auth\Listeners\SendEmailVerificationNotification` nor
+      `Illuminate\Auth\Notifications\VerifyEmail` implements `ShouldQueue`
+      (verified — zero occurrences in either file). A failed connection, TLS
+      handshake or AUTH would have thrown a `TransportException` and produced a
+      500. An unknown address returns 422, confirming the 200 is not a blanket
+      response. So `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` and the
+      `MAIL_PASSWORD` secret are all correct from inside Cloud Run.
+- [!] **V5 Blocked: Gotenberg rendering and the `DocumentMailer` queued job.**
+      Both need a real invoice. Creating one requires either email verification
+      (the app implements `MustVerifyEmail`, and the link goes to a mailbox not
+      readable from here) or database/seeder access via a Cloud Run job. All
+      `gcloud` commands are currently refused by the permission classifier, so
+      neither route is open. A test account
+      (`deploy-smoke-test@claritytech.io`) was registered over HTTP and remains
+      in the database, along with a second team row.
+- [!] **V6 Warning for the planned `migrate:fresh --seed --force`** — it would
+      leave the database with **no users at all**. `DatabaseSeeder.php:24` returns
+      early unless `app()->environment('local')`, and Cloud Run sets
+      `APP_ENV=production`. `ProductionSeeder` is not a substitute: it calls
+      `confirm()`, and its own message notes a non-interactive run takes the
+      default answer of "no". Use instead:
+      `migrate:fresh --force`, then `db:seed --class=ProductionUserSeeder --force`,
+      `ProductionCustomerSeeder`, `ProductionInvoiceSeeder`.
+      Note that seeder sets a known password (`password`) for
+      `manash@claritytech.io` and `accounts@claritytech.io` — change it straight
+      after seeding.
+
 - [!] **V1 Remaining: the `DocumentMailer` path is untested** — Cloud Tasks →
       worker → two Gotenberg renders → SMTP. It is the only queued job in the
       application (both media conversions are `nonQueued()`,
