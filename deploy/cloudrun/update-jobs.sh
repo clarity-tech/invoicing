@@ -22,10 +22,14 @@ JOBS=(invoicing-migrate invoicing-prune invoicing-exchange-rates)
 dry_run=false
 [[ "${1:-}" == "--dry-run" ]] && dry_run=true
 
-# shellcheck disable=SC1091
-set -a; source "$HERE/deploy.env"; set +a
-: "${PROJECT:?PROJECT must be set in deploy.env}"
-: "${REGION:?REGION must be set in deploy.env}"
+ENV_FILE="${DEPLOY_ENV_FILE:-$HERE/deploy.env}"
+if [[ -f "$ENV_FILE" ]]; then
+    # shellcheck disable=SC1091
+    set -a; source "$ENV_FILE"; set +a
+fi
+# CI has no deploy.env and supplies these as environment variables instead.
+: "${PROJECT:?PROJECT must be set (deploy.env or environment)}"
+: "${REGION:?REGION must be set (deploy.env or environment)}"
 
 # WORKER_URL only matters to the HTTP services, but render.sh requires every
 # token to resolve. Jobs never receive a Cloud Tasks request.
