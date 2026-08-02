@@ -19,12 +19,16 @@ Living progress tracker for the migration described in
 | C — Verification | **6** | 6 |
 | D — GCP provisioning | **10** | 11 |
 | M — Manual first deploy | **12** | 12 |
+| V — Live verification | **7** | 7 |
 | E — Cutover | 0 | 7 |
 
-**The application is live on Cloud Run** at
-`https://invoicing-web-823788548123.asia-south1.run.app` and serving 200s.
-Remaining: point Cloudflare at it (D7), set the CI repository variables (D8),
-and the Phase E cutover checks.
+**The application is live at https://invoiceink.claritytech.io and every path is
+verified end to end** — web, security split, jobs, scheduler, Cloud Tasks,
+Gotenberg PDF rendering, and the DocumentMailer queue through to a delivered
+email with a byte-identical PDF attachment.
+
+Outstanding: clear the smoke-test data (see V7), and note the seeding trap in V6
+before running `migrate:fresh`.
 
 **Phases A–C complete.** Phase D is mostly provisioned in project `invoiceink`
 (`asia-south1`); what remains needs values only the user has — secret contents,
@@ -317,7 +321,43 @@ token and return 200.
       500. An unknown address returns 422, confirming the 200 is not a blanket
       response. So `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` and the
       `MAIL_PASSWORD` secret are all correct from inside Cloud Run.
-- [!] **V5 Blocked: Gotenberg rendering and the `DocumentMailer` queued job.**
+- [x] **V7 FULL END-TO-END VERIFIED — every path now exercised on production.**
+
+      Unblocked by registering against a disposable mailbox whose inbox is
+      readable over an API (`mail.tm`), which supplied the signed email
+      verification link. Everything below ran over HTTPS against the live domain;
+      no `gcloud` was involved.
+
+      | Step | Evidence |
+      |---|---|
+      | Register | 201; verification mail **received** from `invoiceink@mails.claritytech.app` |
+      | Verify email | 302 → `/dashboard?verified=1`; link was on the public domain, confirming `APP_URL` generation |
+      | Org setup wizard | steps 1–3 all 302; `/dashboard` and `/customers` then 200 |
+      | Create customer + location | 302; location id 2 |
+      | Create invoice | `INV-2026-27-0001`, ulid `01kz0pakzr4qymq71nscgejg63` |
+      | Public invoice view | 200 in 2.3s |
+      | **Gotenberg — direct PDF** | 200, **124,014 bytes**, valid `%PDF-1.4`, 1 page, in **9.7s**; contains the invoice number, both party names and the line item |
+      | **Queue — send invoice** | 302 in **2.6s** — far too fast for an inline PDF render, so it queued rather than sending synchronously |
+      | **DocumentMailer delivered** | *"Invoice INV-2026-27-0001 from Smoke Test Co - Sent Using InvoiceInk"* received, with `INV-2026-27-0001.pdf` attached |
+      | **Attachment integrity** | downloaded from the inbox: **124,014 bytes — byte-for-byte the same size as the direct render**, valid PDF, full invoice content |
+
+      That last row is the important one: it proves the PDF was rendered by the
+      **Gotenberg sidecar inside the worker service**, reached through Cloud Tasks,
+      not by the web service. The complete chain is confirmed:
+      `Send → Cloud Tasks → OIDC → worker /handle-task → DocumentMailer →
+      PdfService → Gotenberg sidecar → SMTP → delivered with attachment`.
+
+      Timing note: 9.7s for two Gotenberg renders vindicates widening the timeout
+      ladder. The previous `GOTENBERG_TIMEOUT=30` left very little headroom on a
+      cold instance.
+
+      **Test data left in the database** (cleared by the `migrate:fresh` below):
+      users `deploy-smoke-test@claritytech.io` and the `web-library.net` smoke
+      address, their two teams, customer *Smoke Customer Ltd* with one location,
+      and invoice `INV-2026-27-0001`.
+
+- [x] **V5 was: Gotenberg rendering and the `DocumentMailer` queued job** — now
+      closed by V7.
       Both need a real invoice. Creating one requires either email verification
       (the app implements `MustVerifyEmail`, and the link goes to a mailbox not
       readable from here) or database/seeder access via a Cloud Run job. All
