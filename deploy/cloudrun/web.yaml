@@ -1,0 +1,172 @@
+# Cloud Run service: public web frontend for InvoiceInk.
+#
+# Placeholder tokens substituted at deploy time by .github/workflows/docker-build.yml.
+# They are wrapped in double underscores so they cannot collide with environment
+# variable NAMES (a bare "PROJECT" would also rewrite CLOUD_TASKS_PROJECT).
+#
+#   __PROJECT__     GCP project id                 (vars.GCP_PROJECT)
+#   __REGION__      Cloud Run region               (vars.GCP_REGION)
+#   __TAG__         image tag, normally the SHA    (github.sha)
+#   __WORKER_URL__  resolved from the deployed worker service
+#   __DB_HOST__     external MySQL host            (vars.GCP_DB_HOST)
+#   __DB_NAME__     database name                  (vars.GCP_DB_NAME)
+#   __DB_USER__     database user                  (vars.GCP_DB_USER)
+#
+# See docs/cloud_run_deployment_plan.md §9
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: invoicing-web
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        # Hard budget backstop. Exceeding it returns HTTP 429 rather than
+        # silently scaling. Raise to "2" if deploy-time 429s become noticeable.
+        autoscaling.knative.dev/maxScale: "1"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      serviceAccountName: invoicing-app@__PROJECT__.iam.gserviceaccount.com
+      # Higher than OCTANE_WORKERS on purpose: surplus requests queue inside
+      # FrankenPHP and wait, rather than being rejected with a 429.
+      containerConcurrency: 20
+      timeoutSeconds: 120
+      containers:
+        - name: app
+          image: __REGION__-docker.pkg.dev/__PROJECT__/docker/invoicing:__TAG__
+          # With sidecars present there is no default port; exactly one
+          # container must declare it.
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          env:
+            - name: APP_NAME
+              value: InvoiceInk
+            - name: APP_URL
+              value: https://invoiceink.claritytech.io
+            - name: MAIL_FROM_NAME
+              value: InvoiceInk
+            - name: OCTANE_HTTPS
+              value: "true"
+            - name: OCTANE_WORKERS
+              value: "4"
+            - name: OCTANE_MAX_EXECUTION_TIME
+              value: "60"
+            - name: LOG_CHANNEL
+              value: stderr
+
+            # Gotenberg runs as a sidecar in this same instance.
+            - name: GOTENBERG_URL
+              value: http://localhost:3000
+            - name: GOTENBERG_TIMEOUT
+              value: "90"
+
+            # Cloud Run IAM is the only real authentication on the task handler,
+            # and this service is public. The route must not exist here.
+            - name: CLOUD_TASKS_DISABLE_TASK_HANDLER
+              value: "true"
+            - name: QUEUE_CONNECTION
+              value: cloudtasks
+            - name: CLOUD_TASKS_PROJECT
+              value: __PROJECT__
+            - name: CLOUD_TASKS_LOCATION
+              value: __REGION__
+            - name: CLOUD_TASKS_QUEUE
+              value: invoicing-default
+            - name: CLOUD_TASKS_SERVICE_EMAIL
+              value: invoicing-tasks-invoker@__PROJECT__.iam.gserviceaccount.com
+            # Must point at the WORKER service. Left unset, the package derives
+            # the handler from APP_URL and would post tasks to this service,
+            # where the route is disabled. Resolved at deploy time because Cloud
+            # Run only assigns the URL once the service exists.
+            - name: CLOUD_TASKS_HANDLER
+              value: __WORKER_URL__
+
+            - name: CACHE_STORE
+              value: database
+            - name: SESSION_DRIVER
+              value: database
+            - name: FILESYSTEM_DISK
+              value: s3
+
+            # AWS S3 proper — AWS_ENDPOINT stays unset and path-style stays off.
+            - name: AWS_ACCESS_KEY_ID
+              value: __AWS_KEY_ID__
+            - name: AWS_DEFAULT_REGION
+              value: __AWS_REGION__
+            - name: AWS_BUCKET
+              value: __AWS_BUCKET__
+            - name: AWS_URL
+              value: __AWS_URL__
+
+            - name: MAIL_MAILER
+              value: smtp
+            - name: MAIL_HOST
+              value: __MAIL_HOST__
+            - name: MAIL_PORT
+              value: "__MAIL_PORT__"
+            - name: MAIL_USERNAME
+              value: __MAIL_USER__
+            - name: MAIL_FROM_ADDRESS
+              value: __MAIL_FROM__
+
+            - name: DB_CONNECTION
+              value: mysql
+            - name: DB_HOST
+              value: __DB_HOST__
+            - name: DB_PORT
+              value: "__DB_PORT__"
+            - name: DB_DATABASE
+              value: __DB_NAME__
+            - name: DB_USERNAME
+              value: __DB_USER__
+            # Optional: path to a CA bundle for verifying the DB server certificate.
+            # Dropped entirely when DB_SSL_CA is blank, since an empty value would
+            # be used verbatim rather than treated as unset.
+            - name: MYSQL_ATTR_SSL_CA
+              value: __DB_SSL_CA__
+
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: APP_KEY
+                  key: latest
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: DB_PASSWORD
+                  key: latest
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: MAIL_PASSWORD
+                  key: latest
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: AWS_SECRET_ACCESS_KEY
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /up
+            periodSeconds: 5
+            failureThreshold: 30
+
+        - name: gotenberg
+          image: __REGION__-docker.pkg.dev/__PROJECT__/docker/gotenberg:8
+          args:
+            - gotenberg
+            - --chromium-disable-javascript=true
+            # Innermost rung of the timeout ladder; stays below GOTENBERG_TIMEOUT.
+            - --api-timeout=60s
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
