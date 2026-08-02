@@ -291,6 +291,21 @@ form (`…-6oxcvdd6ea-el.a.run.app`) rather than the canonical
 `…-823788548123.asia-south1.run.app`. Both were tested and both accept an OIDC
 token and return 200.
 
+- [x] **V2** CI wired and verified. Repository variables set via `gh` (all except
+      `GCP_AWS_URL` and `GCP_DB_SSL_CA`, which GitHub rejects when empty — correct
+      here, since an unset variable resolves to `""` and `render.sh` then omits
+      the entry). The deploy step was refactored to call `render.sh` rather than
+      repeat its substitution: the duplicated `sed` chain would have shipped
+      `AWS_URL=""` and `MYSQL_ATTR_SSL_CA=""` instead of omitting them, which
+      Laravel would have used verbatim. Simulated the CI environment exactly
+      (no `deploy.env`, empty optionals) and confirmed both entries are dropped,
+      no empty-string values remain, `DB_PORT` is 25060, the image tag
+      substitutes, the revision stamp is present, and no tokens survive.
+- [x] **V3** Work committed — 8 atomic commits on `fix/may-changes`. Pre-existing
+      changes to `.agents/`, `boost.json`, `AGENTS.md` and `prod-docker-compose.yml`
+      deliberately left alone. `pint`, `eslint` and `prettier` all pass; ESLint
+      flagged the new `worker.js`, which was fixed and redeployed so the live
+      Worker matches the committed source.
 - [!] **V1 Remaining: the `DocumentMailer` path is untested** — Cloud Tasks →
       worker → two Gotenberg renders → SMTP. It is the only queued job in the
       application (both media conversions are `nonQueued()`,
