@@ -1,0 +1,39 @@
+{
+  // Cloudflare Worker fronting the InvoiceInk Cloud Run service.
+  //
+  // Deploy:
+  //   cd deploy/cloudflare && bunx wrangler deploy
+  //
+  // Test against the live Cloud Run service without touching DNS:
+  //   bunx wrangler dev --local
+  //   curl -s --compressed http://localhost:8787/login | grep -o '<title>.*</title>'
+  //
+  // Roll back / unbind the route entirely:
+  //   bunx wrangler delete
+  //
+  // The route below binds this Worker to invoiceink.claritytech.io only. No other
+  // hostname on the zone is affected, and no zone-wide setting is changed — the
+  // zone stays on Flexible SSL for every other site.
+  //
+  // See docs/cloud_run_deployment_plan.md §9.4
+
+  "name": "invoiceink-proxy",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-01",
+
+  "routes": [
+    {
+      "pattern": "invoiceink.claritytech.io/*",
+      "zone_name": "claritytech.io"
+    }
+  ],
+
+  // Logs retrievable with `wrangler tail`, and in the dashboard. Worth having on
+  // a component that sits in front of the whole application.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+
+  // No KV, D1, R2 or secrets — this Worker only forwards requests.
+}
