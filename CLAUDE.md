@@ -20,6 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Key Packages
 - `akaunting/laravel-money` - For monetary value handling
 - `laravel/octane` - FrankenPHP worker mode for production
+- `stackkit/laravel-google-cloud-tasks-queue` - production queue driver (push-based,
+  so no worker process is needed; see Production Deployment below)
 - `inertiajs/inertia-laravel` v3 - Server-side Inertia adapter
 - `gotenberg/gotenberg` - PDF generation via Docker sidecar (replaced Browsershot/Chrome)
 
@@ -223,7 +225,7 @@ Invoice -> InvoiceItem (one-to-many)
 - **Unit/Feature Tests**: ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
 - **Browser Tests**: Use self-contained approach with inline data creation (see Browser Testing Best Practices below)
 - All Pest tests must pass before commits
-- Current: 1,163 test cases (Unit + Feature), plus browser tests
+- Current: ~1,160 Unit + Feature tests, plus ~120 browser tests
 - Use test helpers in `tests/TestHelpers.php`: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
 
 **Browser Testing Best Practices (Pest Browser + Playwright):**
@@ -357,6 +359,11 @@ it('user can access feature', function () {
 - API: POST /forms/chromium/convert/html with index.html as multipart attachment
 - A4 page format (8.27x11.7in) with 10mm margins, printBackground enabled
 - Config: services.gotenberg.url, services.gotenberg.enabled, services.gotenberg.timeout
+- **Every document is rendered twice**: once to count pages, then again so the
+  template can pin the footer to the last page. Budget `2 x render` for any
+  timeout. A real invoice takes ~10s end to end.
+- In production Gotenberg is a **sidecar container** on `localhost:3000` in both
+  Cloud Run services; locally it is the `gotenberg` Sail service.
 
 **Multi-Currency Support:**
 - 9 supported currencies: INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED
@@ -393,7 +400,8 @@ it('user can access feature', function () {
 
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
-- 1,163 test cases (Unit + Feature), plus browser tests
+- ~1,160 Unit + Feature tests, plus ~120 browser tests (browser tests need
+  `sail composer browser-setup`; they fail outside the container without Chromium)
 - Parallel testing supported: `sail php artisan test --parallel --testsuite=Unit,Feature`
 - Feature tests use `assertInertia()` for Inertia response assertions
 - Helper functions: `createOrganizationWithLocation()`, `createCustomerWithLocation()`, `createInvoiceWithItems()`, `createNumberingSeries()`
@@ -474,6 +482,57 @@ resources/js/
 ## Invoice Numbering Series
 
 Flexible numbering with format tokens (`{PREFIX}`, `{YEAR}`, `{SEQUENCE:4}`, `{FY}`, etc.), reset frequencies (never/yearly/monthly/financial_year), and per-organization/location series. Auto-created on first invoice if none exists. See `InvoiceNumberingService` and `InvoiceNumberingSeries` model for implementation details.
+
+## Production Deployment (Google Cloud Run)
+
+Production is **Google Cloud Run**, project `invoiceink`, region `asia-south1`,
+fronted by a Cloudflare Worker at <https://invoiceink.claritytech.io>.
+
+Two services from one image, plus three jobs:
+
+| Resource | Notes |
+|---|---|
+| `invoicing-web` | public; concurrency 20; `CLOUD_TASKS_DISABLE_TASK_HANDLER=true` |
+| `invoicing-worker` | IAM-only; concurrency 1; runs queued jobs |
+| `invoicing-migrate` / `-prune` / `-exchange-rates` | Cloud Run Jobs |
+
+Both services carry a **Gotenberg sidecar** on `localhost:3000`. Jobs do not —
+anything rendering a PDF must run on a service, not a job.
+
+### Things that will bite you
+
+- **`route:cache` must NOT be baked at build time.** The Cloud Tasks package
+  registers `POST /handle-task` conditionally on `cloud-tasks.disable_task_handler`.
+  Laravel loads compiled routes instead of re-evaluating that condition, so a
+  baked cache would expose the task handler on the *public* service. It runs at
+  container start instead. `view:cache` and `event:cache` are safe to bake.
+- **Migrations never run at container start.** `AUTORUN_LARAVEL_MIGRATION=false`;
+  they run as a Cloud Run Job before any new revision serves traffic.
+- **An unchanged manifest creates no new revision**, and `secretKeyRef` with
+  `latest` resolves at instance start — so rotating a secret and redeploying
+  would silently keep serving the old value. `render.sh` stamps every render to
+  prevent this.
+- **The timeout ladder must increase outward**: Gotenberg `--api-timeout` 60s <
+  `GOTENBERG_TIMEOUT` 90s < Octane/PHP `max_execution_time` < Cloud Run
+  `timeoutSeconds`. Every PDF is rendered **twice** (page count, then footer
+  placement) — a real render takes ~10s.
+- **Non-interactive runs take the default answer to `confirm()`**, which is why
+  `ProductionSeeder` reports success while seeding nothing. Call
+  `ProductionUserSeeder`, `ProductionCustomerSeeder`, `ProductionInvoiceSeeder`
+  directly. `DatabaseSeeder` refuses outside `local` entirely.
+
+### Deploy tooling (`deploy/cloudrun/`)
+
+```bash
+./deploy/cloudrun/render.sh web            # render a manifest from deploy.env
+./deploy/cloudrun/update-jobs.sh           # sync job env from the worker manifest
+./deploy/cloudrun/artisan.sh migrate:status  # run artisan in production
+./deploy/cloudrun/push-secrets.sh app.env  # load secrets into Secret Manager
+```
+
+`deploy.env` is gitignored. Real secrets live in Secret Manager, never in the
+manifests. Full architecture and rationale:
+`docs/cloud_run_deployment_plan.md`.
 
 ## Git Workflow
 - Always run all formatters before commit:
