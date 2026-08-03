@@ -3,8 +3,10 @@
 Migration plan for moving InvoiceInk from the current single-VPS Docker Compose
 deployment (`prod-docker-compose.yml`) to Google Cloud Run.
 
-**Status:** repo-side changes implemented and verified (Phases A–C); GCP
-provisioning and cutover pending. Live progress in
+**Status:** **live and fully verified.** Deployed via CI on every push to `main`.
+Every path — web, security split, jobs, scheduler, Cloud Tasks, Gotenberg, and
+the queued mail path through to a delivered PDF — has been exercised against
+production. Verification record in
 [`cloud_run_migration_todo.md`](./cloud_run_migration_todo.md).
 **Application:** InvoiceInk — <https://invoiceink.claritytech.io>
 
@@ -92,9 +94,9 @@ Two Cloud Scheduler entries, not a per-minute `schedule:run`.
    invoiceink.claritytech.io
             │
             ▼
-   ┌──────────────────┐  proxied CNAME + Origin Rule
-   │   Cloudflare     │  (Host header → *.run.app, SSL Full strict)
-   └────────┬─────────┘
+   ┌──────────────────┐  Worker on route invoiceink.claritytech.io/*
+   │   Cloudflare     │  (fetches the *.run.app URL directly, so Host is
+   └────────┬─────────┘   correct by construction — see §9.4)
             │
             ▼
                     ┌─────────────────────────────────────┐
@@ -205,7 +207,13 @@ Both settings are load-bearing:
 |---|---|---|
 | `invoicing-app` | Runtime identity of both services and all jobs | `cloudtasks.enqueuer`, `cloudtasks.viewer`, `cloudtasks.taskDeleter`, `secretmanager.secretAccessor` |
 | `invoicing-tasks-invoker` | Identity Cloud Tasks acts as when calling the worker | `run.invoker` on `invoicing-worker` **only** |
-| `github-deployer` | CI/CD via Workload Identity Federation | `run.admin`, `artifactregistry.writer`, `iam.serviceAccountUser` |
+| `github-deployer` | CI/CD via Workload Identity Federation | `run.admin`, `artifactregistry.writer`, `iam.serviceAccountUser`, `logging.viewer` |
+
+`logging.viewer` on `github-deployer` is easy to omit and fails in a way that
+looks like success: the Artisan workflow runs the command, the Cloud Run Job
+completes, and the run goes green — but reading the output back is denied, so
+the log block comes out empty and indistinguishable from a command that printed
+nothing. It was added after exactly that happened.
 
 `invoicing-app` needs `iam.serviceAccountUser` on `invoicing-tasks-invoker` so it
 can instruct Cloud Tasks to mint tokens as that identity.
@@ -560,19 +568,39 @@ mappings exist in only nine regions — `asia-east1`, `asia-northeast1`,
 external load balancer would have added an hourly forwarding rule and static IP
 regardless of traffic.
 
-#### Configuration
+#### Configuration — a Worker, not an Origin Rule
 
-1. **DNS** — `CNAME invoiceink → invoicing-web-<hash>.asia-south1.run.app`,
-   **proxied** (orange cloud).
-2. **Origin Rule** — Host header override, rewriting `Host` to the `.run.app`
-   hostname. This is mandatory, not cosmetic: Cloud Run routes by hostname and
-   rejects a request whose `Host` does not match a hostname it serves. SNI follows
-   the Host override automatically.
-3. **SSL/TLS mode** — **Full (strict)**. Cloud Run only accepts HTTPS, so
-   Cloudflare's "Flexible" mode (plaintext to origin) cannot work, and with
-   `OCTANE_HTTPS=true` it would also produce redirect loops. Full (strict)
-   validates the Google-issued certificate for the `.run.app` name, which the SNI
-   override makes match.
+The obvious approach is a proxied CNAME plus an Origin Rule rewriting the `Host`
+header, because Cloud Run routes by hostname and rejects a request whose `Host`
+it does not serve. **That approach does not work on this zone**, for a reason
+that has nothing to do with the rewrite:
+
+> `claritytech.io` runs in **Flexible** SSL mode, meaning Cloudflare reaches
+> origins over plaintext HTTP. Cloud Run serves HTTPS only and `301`s plaintext,
+> so fixing the `Host` header would simply trade the 404 for a redirect loop.
+> Switching the zone to Full is **not** a local change — the SSL mode is
+> zone-wide and would apply to every other site on the domain, several of which
+> may not present a valid certificate.
+
+So the implementation is a **Cloudflare Worker** (`deploy/cloudflare/`):
+
+1. **DNS** — a proxied record for `invoiceink` must exist, since Worker routes
+   require one. Its target is irrelevant; the Worker never follows it.
+2. **Worker** — bound to route `invoiceink.claritytech.io/*`. It calls
+   `fetch()` against the `.run.app` URL explicitly, and `fetch()` derives `Host`
+   from the URL it is given — so the header is correct **by construction** and
+   there is nothing to override. It also makes its own HTTPS connection, so the
+   zone SSL mode does not apply to it and does not have to change.
+3. **Nothing else** — no zone-wide setting is touched, and no other hostname on
+   the zone is affected.
+
+Deploy it with `cd deploy/cloudflare && bunx wrangler deploy`; roll it back with
+`bunx wrangler delete`, which unbinds the route.
+
+> Cloudflare's built-in Host header override may also be plan-gated. Community
+> reports describe a `not entitled` error on non-Enterprise zones, though the
+> current documentation states no such restriction. It is moot here — the SSL
+> mode rules the approach out regardless.
 
 #### Why the app needs no changes
 

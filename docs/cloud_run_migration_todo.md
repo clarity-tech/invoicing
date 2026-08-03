@@ -5,8 +5,8 @@ Living progress tracker for the migration described in
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` not applicable
 
-**Branch:** `fix/may-changes` (working in place; nothing committed yet)
-**Last updated:** 2026-08-01 — Phases A–C complete, D/E pending GCP access
+**Status:** complete. Merged to `main` and deployed by CI.
+**Last updated:** 2026-08-04
 
 ---
 
@@ -30,9 +30,13 @@ email with a byte-identical PDF attachment.
 Outstanding: clear the smoke-test data (see V7), and note the seeding trap in V6
 before running `migrate:fresh`.
 
-**Phases A–C complete.** Phase D is mostly provisioned in project `invoiceink`
-(`asia-south1`); what remains needs values only the user has — secret contents,
-DB connection details, and the Cloudflare DNS change.
+Everything below is done. Kept as a record of what was verified and, more
+usefully, what broke on the way — the route-cache interaction that would have
+exposed the task handler publicly, the four database bugs, the silent
+no-new-revision on secret rotation, and the `:latest` tag collision between two
+workflows.
+
+Follow-on work that is **not** done is tracked at the end under *Remaining*.
 
 ---
 
@@ -481,3 +485,28 @@ Newest last.
   running). `composer.json` declares no `ext-*` requirements so the lock should
   match, but the host lacks `ext-redis` and `vendor/` was previously built in the
   container. Worth a confirming `sail composer install` before deploying.
+
+---
+
+## Remaining
+
+Not blocking, but genuinely outstanding.
+
+- [ ] **Change the seeded passwords.** `ProductionUserSeeder` sets `password`
+      for `manash@claritytech.io` and `accounts@claritytech.io`, and the site is
+      publicly reachable. Highest-risk item.
+- [ ] **Monitoring.** No uptime check and no alerting. Nothing reports a 500.
+- [ ] **Budget alert.** Scale-to-zero makes runaway spend unlikely, but there is
+      no ceiling configured.
+- [ ] **Duplicate-email guard.** `DocumentMailer` has no idempotency check, so a
+      send that succeeds at SMTP and then times out is retried by Cloud Tasks and
+      delivered twice. A `sent_at` check would close it.
+- [ ] **Cold start unmeasured.** Listed as an open risk in the plan and never
+      measured. `minScale: 1` on web is the lever if it is unpleasant.
+- [ ] **Verify DB backups** are enabled on the DigitalOcean cluster.
+- [ ] **Zone-wide Flexible SSL.** Cloudflare reaches the *other* sites on
+      `claritytech.io` over plaintext HTTP. Does not affect InvoiceInk — the
+      Worker makes its own HTTPS connection — but it is a real weakness for
+      whatever else is on that zone.
+- [ ] **Decommission the VPS** and delete `docker/production/README.md`, which
+      documents the deployment it replaced.

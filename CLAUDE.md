@@ -481,7 +481,36 @@ resources/js/
 
 ## Invoice Numbering Series
 
-Flexible numbering with format tokens (`{PREFIX}`, `{YEAR}`, `{SEQUENCE:4}`, `{FY}`, etc.), reset frequencies (never/yearly/monthly/financial_year), and per-organization/location series. Auto-created on first invoice if none exists. See `InvoiceNumberingService` and `InvoiceNumberingSeries` model for implementation details.
+Flexible numbering with format tokens, reset frequencies
+(never/yearly/monthly/financial_year), and per-organization/location series.
+A series is auto-created on the first invoice if none exists — so the default
+below only applies to organizations that have not yet issued a document.
+See `InvoiceNumberingService` and the `InvoiceNumberingSeries` model.
+
+**Default for a new organization** — both branches produce `INV-26001`:
+
+| Org state | Pattern | Resets |
+|---|---|---|
+| Financial year + country set | `{PREFIX}-{FY:2}{SEQUENCE:3}` | financial year |
+| Otherwise | `{PREFIX}-{YEAR:2}{SEQUENCE:3}` | yearly |
+
+**Tokens:** `{PREFIX}` `{YEAR}` `{YEAR:2}` `{MONTH}` `{MONTH:3}` `{DAY}`
+`{SEQUENCE}` `{SEQUENCE:n}` `{FY}` (`2026-27`) `{FY:2}` (`26`) `{FY_START}`
+`{FY_END}` `{FY_FULL}` `{FY_RANGE}`
+
+Two things that are easy to get wrong:
+
+- **`{FY:2}` is the year the financial year *starts* in, not the calendar year.**
+  Under April–March, February 2027 is still FY 2026-27 and renders `26`. There
+  is a test pinning this, because it only diverges in Q4 and would otherwise
+  break silently.
+- **`{SEQUENCE:3}` does not truncate.** The thousandth document in a period
+  renders `INV-261000`. Numbers stay unique and ordered; only the width changes.
+  Widen to `{SEQUENCE:4}` if an organization will exceed 999 in a period.
+
+Any pattern containing `{FY` requires the organization to have financial year
+configuration — `generateInvoiceNumber()` throws otherwise. The check is a
+`str_contains(pattern, '{FY')`, so it covers every FY token including new ones.
 
 ## Production Deployment (Google Cloud Run)
 
@@ -521,6 +550,25 @@ anything rendering a PDF must run on a service, not a job.
   `ProductionUserSeeder`, `ProductionCustomerSeeder`, `ProductionInvoiceSeeder`
   directly. `DatabaseSeeder` refuses outside `local` entirely.
 
+### Running artisan against production
+
+There is no shell to attach to. Commands run as a Cloud Run Job execution with
+its arguments overridden — either from the Actions tab
+(**Artisan (production)**, `workflow_dispatch`) or locally:
+
+```bash
+./deploy/cloudrun/artisan.sh --logs migrate:status
+```
+
+Destructive commands (`migrate:fresh`, `migrate:reset`, `migrate:rollback`,
+`db:wipe`) require ticking an acknowledgement box in the workflow. The job runs
+under the `production` environment, so required reviewers there gate it too.
+
+The identity running the command needs **`roles/logging.viewer`** to read the
+output back. Without it the command still runs, but the log read fails and the
+run reports success with an empty output block — which looks exactly like a
+command that printed nothing. `github-deployer` has this role for that reason.
+
 ### Deploy tooling (`deploy/cloudrun/`)
 
 ```bash
@@ -533,6 +581,20 @@ anything rendering a PDF must run on a service, not a job.
 `deploy.env` is gitignored. Real secrets live in Secret Manager, never in the
 manifests. Full architecture and rationale:
 `docs/cloud_run_deployment_plan.md`.
+
+## Releases
+
+Conventional commits drive semantic versioning through `release-please`
+(`.github/workflows/release.yml`). It maintains a release PR on `main`; merging
+it creates the tag and GitHub release.
+
+- `feat:` -> minor, `fix:` -> patch, `feat!:` / `BREAKING CHANGE:` -> major.
+- Releasing does **not** deploy. Pushing to `main` deploys; a release labels an
+  image that is already live.
+- Images are **retagged, never rebuilt**, so a version is byte-identical to the
+  tested artifact. `docker-build.yml` publishes `type=sha,format=long` precisely
+  so there is an immutable tag to retag from -- `main` and `latest` both move.
+- Version state lives in `version.txt` and `.release-please-manifest.json`.
 
 ## Git Workflow
 - Always run all formatters before commit:
