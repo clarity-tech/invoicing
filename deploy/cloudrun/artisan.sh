@@ -60,10 +60,12 @@ gcloud run jobs execute "$RUNNER_JOB" \
 if $show_logs; then
     echo
     echo "--- output ---"
+    # Cloud Logging returns newest-first; reverse it so the output reads in the
+    # order it was produced. awk rather than tac, which is absent on macOS.
     gcloud logging read \
         "resource.type=cloud_run_job AND resource.labels.job_name=$RUNNER_JOB" \
         --project="$PROJECT" --limit=40 --freshness=5m \
         --format='value(textPayload)' \
         | grep -v '^[[:space:]]*$' \
-        | tac
+        | awk '{ line[NR] = $0 } END { for (i = NR; i > 0; i--) print line[i] }'
 fi
