@@ -28,11 +28,15 @@ ENV_FILE="${DEPLOY_ENV_FILE:-$HERE/deploy.env}"
 # manifest entirely rather than rendered as "", because Laravel distinguishes
 # unset from empty: config/filesystems.php falls back to the SDK's generated
 # bucket URL when AWS_URL is absent, but an empty string would be used verbatim.
-OPTIONAL_TOKENS=(AWS_URL DB_SSL_CA)
+#
+# STAGING_URL is optional for the same chicken-and-egg reason as WORKER_URL:
+# Cloud Run only assigns the URL once the service exists, so the first render
+# omits APP_URL and a second render fills it in.
+OPTIONAL_TOKENS=(AWS_URL DB_SSL_CA STAGING_URL)
 
 service="${1:-}"
-if [[ "$service" != "web" && "$service" != "worker" ]]; then
-    echo "usage: $(basename "$0") {web|worker}" >&2
+if [[ "$service" != "web" && "$service" != "worker" && "$service" != "mcp-staging" ]]; then
+    echo "usage: $(basename "$0") {web|worker|mcp-staging}" >&2
     exit 64
 fi
 
