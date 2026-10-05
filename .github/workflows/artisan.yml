@@ -37,6 +37,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Uses the same environment as deploy-production, so if you add required
     # reviewers there, they gate this too.
     environment: production
