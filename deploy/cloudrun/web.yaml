@@ -59,8 +59,15 @@ spec:
               value: "4"
             - name: OCTANE_MAX_EXECUTION_TIME
               value: "60"
+            # stderr keeps everything in Cloud Logging; google-chat mirrors
+            # error and above into the chat space. Stacked rather than
+            # replacing, so nothing is lost if the webhook is unreachable.
             - name: LOG_CHANNEL
-              value: stderr
+              value: stack
+            - name: LOG_STACK
+              value: stderr,google-chat
+            - name: LOG_GOOGLE_CHAT_ENABLED
+              value: "true"
 
             # Gotenberg runs as a sidecar in this same instance.
             - name: GOTENBERG_URL
@@ -137,6 +144,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: APP_KEY
+                  key: latest
+            - name: LOG_GOOGLE_CHAT_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: LOG_GOOGLE_CHAT_WEBHOOK_URL
                   key: latest
             - name: DB_PASSWORD
               valueFrom:
