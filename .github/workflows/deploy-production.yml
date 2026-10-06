@@ -1,0 +1,174 @@
+name: Deploy to production
+
+# Extracted so it can be invoked two ways:
+#   * called by "CI & Deploy" after the test jobs pass -- a local `uses:` runs
+#     from the caller's own commit and inside the caller's run, so the gate and
+#     the SHA are exactly the caller's.
+#   * dispatched by hand to redeploy or roll back to an image already in GHCR,
+#     which previously meant running gcloud locally.
+on:
+  workflow_call:
+    inputs:
+      image_ref:
+        description: Fully-qualified image to mirror from, e.g. ghcr.io/owner/repo@sha256:...
+        required: true
+        type: string
+      tag:
+        description: Tag to deploy under in Artifact Registry (the commit SHA for CI deploys)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version or commit SHA already published to GHCR, e.g. v1.4.0'
+        required: true
+        type: string
+
+# A second deploy must not start while the first is mid-migration, so this
+# queues rather than cancels. Keyed on the service, not the ref, because a
+# dispatched rollback and a push-triggered deploy target the same Cloud Run
+# services.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Observed 173-201s; this is headroom, not a target.
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # required for Workload Identity Federation
+
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT }}
+      REGION: ${{ vars.GCP_REGION }}
+
+    steps:
+      # Pinned to the thing being deployed, not to whatever branch triggered
+      # this. `tag` is the commit SHA for a CI deploy and a version tag for a
+      # dispatched rollback, and both are checkoutable -- so render.sh, the
+      # Cloud Run manifests and the migrations all come from the same point in
+      # history as the image. Without this a rollback would deploy an old image
+      # against today's manifests.
+      - name: Checkout the ref being deployed
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      # Cloud Run can pull public GHCR images, but same-region Artifact Registry
+      # pulls are faster on cold start and remove an external dependency.
+      - name: Mirror image into Artifact Registry
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+          SRC="${{ inputs.image_ref }}"
+          if [ -z "$SRC" ]; then SRC="ghcr.io/${{ github.repository }}:${{ inputs.tag }}"; fi
+          DST=$REGION-docker.pkg.dev/$PROJECT/docker/invoicing:${{ inputs.tag }}
+          docker buildx imagetools create --tag "$DST" "$SRC"
+
+      # Runs once to completion before any new revision serves traffic. This is
+      # why AUTORUN_LARAVEL_MIGRATION is off in the image.
+      - name: Run migrations
+        run: |
+          gcloud run jobs update invoicing-migrate --region=$REGION \
+            --image=$REGION-docker.pkg.dev/$PROJECT/docker/invoicing:${{ inputs.tag }}
+          gcloud run jobs execute invoicing-migrate --region=$REGION --wait
+
+      # CLOUD_TASKS_HANDLER must be the worker's URL, which Cloud Run only
+      # assigns once the service exists. On the very first deploy the worker is
+      # created with a placeholder so its URL can be read back; afterwards the
+      # existing URL is reused and both services render with the real value.
+      # Renders and deploys via deploy/cloudrun/render.sh rather than repeating
+      # its substitution here. That script is the single source of truth: it
+      # drops optional entries whose value is intentionally blank (Laravel
+      # distinguishes unset from empty, so AWS_URL="" would be used verbatim),
+      # stamps each render so an unchanged spec still produces a new revision,
+      # and refuses to emit a manifest containing an unsubstituted token.
+      - name: Deploy services
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT }}
+          REGION: ${{ vars.GCP_REGION }}
+          TAG: ${{ inputs.tag }}
+          DB_HOST: ${{ vars.GCP_DB_HOST }}
+          DB_PORT: ${{ vars.GCP_DB_PORT }}
+          DB_NAME: ${{ vars.GCP_DB_NAME }}
+          DB_USER: ${{ vars.GCP_DB_USER }}
+          DB_SSL_CA: ${{ vars.GCP_DB_SSL_CA }}
+          AWS_KEY_ID: ${{ vars.GCP_AWS_KEY_ID }}
+          AWS_REGION: ${{ vars.GCP_AWS_REGION }}
+          AWS_BUCKET: ${{ vars.GCP_AWS_BUCKET }}
+          AWS_URL: ${{ vars.GCP_AWS_URL }}
+          MAIL_HOST: ${{ vars.GCP_MAIL_HOST }}
+          MAIL_PORT: ${{ vars.GCP_MAIL_PORT }}
+          MAIL_USER: ${{ vars.GCP_MAIL_USER }}
+          MAIL_FROM: ${{ vars.GCP_MAIL_FROM }}
+          # No deploy.env in CI; render.sh falls back to the environment.
+          DEPLOY_ENV_FILE: /dev/null
+        run: |
+          set -euo pipefail
+
+          # CLOUD_TASKS_HANDLER needs the worker's URL, which Cloud Run only
+          # assigns once the service exists. Bootstrap it on a first deploy.
+          WORKER_URL="$(gcloud run services describe invoicing-worker \
+            --region="$REGION" --format='value(status.url)' 2>/dev/null || true)"
+
+          if [ -z "$WORKER_URL" ]; then
+            echo "Worker not found — bootstrapping to obtain its URL."
+            WORKER_URL=https://placeholder.invalid \
+              ./deploy/cloudrun/render.sh worker > /tmp/worker-bootstrap.yaml
+            gcloud run services replace /tmp/worker-bootstrap.yaml --region="$REGION"
+            WORKER_URL="$(gcloud run services describe invoicing-worker \
+              --region="$REGION" --format='value(status.url)')"
+          fi
+
+          echo "Worker URL: $WORKER_URL"
+
+          # Worker first: the handler must exist before the public service can
+          # enqueue to it.
+          for SVC in worker web; do
+            WORKER_URL="$WORKER_URL" ./deploy/cloudrun/render.sh "$SVC" > "/tmp/$SVC.yaml"
+            gcloud run services replace "/tmp/$SVC.yaml" --region="$REGION"
+          done
+
+      # Jobs run the same application and need the same configuration. Derived
+      # from the rendered worker manifest so the two cannot drift.
+      - name: Sync job configuration
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT }}
+          REGION: ${{ vars.GCP_REGION }}
+          TAG: ${{ inputs.tag }}
+          DB_HOST: ${{ vars.GCP_DB_HOST }}
+          DB_PORT: ${{ vars.GCP_DB_PORT }}
+          DB_NAME: ${{ vars.GCP_DB_NAME }}
+          DB_USER: ${{ vars.GCP_DB_USER }}
+          DB_SSL_CA: ${{ vars.GCP_DB_SSL_CA }}
+          AWS_KEY_ID: ${{ vars.GCP_AWS_KEY_ID }}
+          AWS_REGION: ${{ vars.GCP_AWS_REGION }}
+          AWS_BUCKET: ${{ vars.GCP_AWS_BUCKET }}
+          AWS_URL: ${{ vars.GCP_AWS_URL }}
+          MAIL_HOST: ${{ vars.GCP_MAIL_HOST }}
+          MAIL_PORT: ${{ vars.GCP_MAIL_PORT }}
+          MAIL_USER: ${{ vars.GCP_MAIL_USER }}
+          MAIL_FROM: ${{ vars.GCP_MAIL_FROM }}
+          DEPLOY_ENV_FILE: /dev/null
+        run: |
+          set -euo pipefail
+          for J in invoicing-prune invoicing-exchange-rates; do
+            gcloud run jobs update "$J" --region="$REGION" \
+              --image=$REGION-docker.pkg.dev/$PROJECT/docker/invoicing:${{ inputs.tag }} --quiet
+          done
+          ./deploy/cloudrun/update-jobs.sh
