@@ -47,7 +47,7 @@ sail php artisan make:cast [CastName]
 sail php artisan make:mail [MailableName]
 
 # Regenerate Wayfinder typed routes (after route changes)
-sail php artisan wayfinder:generate --path=resources/js --no-interaction
+sail php artisan wayfinder:generate --path=resources/js --with-form --no-interaction
 
 # Clear caches
 sail php artisan config:clear
