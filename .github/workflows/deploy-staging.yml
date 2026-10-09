@@ -1,0 +1,339 @@
+name: Deploy to staging
+
+# Manual only, by design. Staging is a single shared service used to look at a
+# branch in a production-shaped environment before it merges, which is a
+# decision someone makes rather than a consequence of pushing.
+#
+# The branch is GitHub's own "Use workflow from" selection, so everything below
+# works from `github.sha` -- one commit, fixed at dispatch, for both jobs.
+#
+# It replaces a `deploy-staging` stub in docker-build.yml that echoed a string
+# and was gated on a `develop` branch which has never existed, so it reported
+# "skipped" on every run while looking like a staging deploy that worked.
+on:
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: 'Migrate the staging schema before deploying'
+        required: false
+        default: true
+        type: boolean
+
+# One staging service, so deploys queue rather than race. Not cancelled
+# mid-flight for the same reason as production: cancelling between
+# `jobs execute` and its completion leaves a migration running server-side with
+# nothing watching it.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Resolve or build the image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_ref: ${{ steps.pick.outputs.image_ref }}
+      tag: ${{ steps.pick.outputs.tag }}
+
+    steps:
+      # Checked up front, before anything is built. render.sh does refuse to
+      # emit a half-configured manifest, but update-jobs.sh calls it with
+      # stderr discarded -- so on a first dispatch the refusal would surface as
+      # a bare `exit 78`, several minutes in, with the reason swallowed.
+      - name: Check staging is configured
+        env:
+          STAGING_DB_NAME: ${{ vars.GCP_STAGING_DB_NAME }}
+          STAGING_DB_USER: ${{ vars.GCP_STAGING_DB_USER }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "$STAGING_DB_NAME" ] || missing="$missing GCP_STAGING_DB_NAME"
+          [ -n "$STAGING_DB_USER" ] || missing="$missing GCP_STAGING_DB_USER"
+          if [ -n "$missing" ]; then
+            echo "::error::Unset repository variables:$missing -- staging needs a schema separate from production and an account granted only on it. See deploy/cloudrun/deploy.env.example."
+            exit 1
+          fi
+          echo "Staging database configuration is present."
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # CI publishes `sha-<commit>` for every push to main, and release.yml
+      # retags from exactly that tag so a released version is byte-identical to
+      # the tested artifact. This reads that tag when it exists and never writes
+      # it: a staging build sharing the name would mean a release could retag
+      # whichever of the two landed last.
+      - name: Look for an image CI already built
+        id: existing
+        run: |
+          set -euo pipefail
+          SRC="ghcr.io/${{ github.repository }}:sha-${{ github.sha }}"
+          if docker buildx imagetools inspect "$SRC" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Reusing CI's image: $SRC"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No CI image for this commit -- building one. Pull requests do"
+            echo "not publish images, so this is the normal path for a branch."
+          fi
+
+      - name: Set up Docker Buildx
+        if: steps.existing.outputs.found == 'false'
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: network=host
+
+      # Must match build-and-push in docker-build.yml: same Dockerfile, same
+      # target, same platform, same build args. A staging image built
+      # differently from the CI one verifies the wrong thing.
+      #
+      # `cache-from` only. Writing to the Actions cache from here would mix
+      # layers for an unmerged branch into the scope CI reads from, and
+      # potentially evict entries CI depends on, to save time on a build that
+      # happens by hand a few times a week.
+      - name: Build the image
+        id: build
+        if: steps.existing.outputs.found == 'false'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/production/Dockerfile.frankenphp
+          target: production
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
+          cache-from: type=gha
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            VITE_APP_NAME=InvoiceInk
+
+      - name: Settle on the image to deploy
+        id: pick
+        env:
+          FOUND: ${{ steps.existing.outputs.found }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          REPO="ghcr.io/${{ github.repository }}"
+
+          if [ "$FOUND" = "true" ]; then
+            echo "image_ref=${REPO}:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            # By digest, so the deploy promotes this exact build rather than
+            # re-resolving a tag that a later dispatch may have moved.
+            echo "image_ref=${REPO}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          fi
+
+          # The Artifact Registry tag. Distinct from the bare-SHA tag a
+          # production deploy writes, because release.yml retags AR's `:<sha>`
+          # too -- a staging image must never be a candidate for that.
+          echo "tag=staging-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation
+
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT }}
+      REGION: ${{ vars.GCP_REGION }}
+      TAG: ${{ needs.image.outputs.tag }}
+      SERVICE: invoicing-mcp-staging
+      MIGRATE_JOB: invoicing-migrate-staging
+
+    steps:
+      # render.sh, update-jobs.sh and mcp-staging.yaml come from the dispatched
+      # branch along with everything else, so a change to the manifest or the
+      # deploy scripts can be exercised on staging before it reaches
+      # production. Note the corollary: a branch carrying a broken
+      # update-jobs.sh runs that broken copy here, with credentials that can
+      # reach production's Cloud Run jobs. Review deploy/ changes accordingly.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      # Read before anything changes. Staging is a single shared slot, so
+      # putting back whatever a colleague had deployed should be one dispatch
+      # rather than an archaeology exercise.
+      - name: Record what is deployed now
+        id: current
+        run: |
+          set -euo pipefail
+          PREV="$(gcloud run services describe "$SERVICE" \
+            --region="$REGION" --project="$PROJECT" \
+            --format='value(spec.template.spec.containers[0].image)' 2>/dev/null || true)"
+          echo "previous=${PREV:-none}" >> "$GITHUB_OUTPUT"
+          echo "Currently deployed: ${PREV:-nothing}"
+
+      # Cloud Run can pull from GHCR, but a same-region Artifact Registry pull
+      # is faster on a cold start and removes an external dependency.
+      - name: Mirror the image into Artifact Registry
+        env:
+          SRC: ${{ needs.image.outputs.image_ref }}
+        run: |
+          set -euo pipefail
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker buildx imagetools create \
+            --tag "$REGION-docker.pkg.dev/$PROJECT/docker/invoicing:$TAG" "$SRC"
+
+      # A job of its own, so a staging migration cannot be aimed at the
+      # production schema even by mistake. Created on first use; its environment
+      # is derived from mcp-staging.yaml by update-jobs.sh, so it cannot drift
+      # from the service it migrates for.
+      - name: Migrate the staging schema
+        if: inputs.run_migrations
+        env:
+          STAGING_DB_NAME: ${{ vars.GCP_STAGING_DB_NAME }}
+          STAGING_DB_USER: ${{ vars.GCP_STAGING_DB_USER }}
+          DB_HOST: ${{ vars.GCP_DB_HOST }}
+          DB_PORT: ${{ vars.GCP_DB_PORT }}
+          DB_SSL_CA: ${{ vars.GCP_DB_SSL_CA }}
+          AWS_KEY_ID: ${{ vars.GCP_AWS_KEY_ID }}
+          AWS_REGION: ${{ vars.GCP_AWS_REGION }}
+          AWS_BUCKET: ${{ vars.GCP_AWS_BUCKET }}
+          AWS_URL: ${{ vars.GCP_AWS_URL }}
+          # No deploy.env in CI; render.sh falls back to the environment.
+          DEPLOY_ENV_FILE: /dev/null
+        run: |
+          set -euo pipefail
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT/docker/invoicing:$TAG"
+
+          if gcloud run jobs describe "$MIGRATE_JOB" \
+               --region="$REGION" --project="$PROJECT" >/dev/null 2>&1; then
+            gcloud run jobs update "$MIGRATE_JOB" \
+              --region="$REGION" --project="$PROJECT" --image="$IMAGE" --quiet
+          else
+            echo "Creating $MIGRATE_JOB."
+            gcloud run jobs create "$MIGRATE_JOB" \
+              --region="$REGION" --project="$PROJECT" --image="$IMAGE" \
+              --service-account="invoicing-app@$PROJECT.iam.gserviceaccount.com" \
+              --max-retries=0 --task-timeout=600s \
+              --command=php --args=artisan,migrate,--force --quiet
+          fi
+
+          # Before the execute, not after. A freshly created job carries no
+          # environment at all, so migrating first would run against whatever
+          # the image defaults to -- which is not the staging schema. The
+          # production deploy syncs afterwards only because its jobs already
+          # hold the previous deploy's configuration.
+          ./deploy/cloudrun/update-jobs.sh --service mcp-staging
+
+          gcloud run jobs execute "$MIGRATE_JOB" \
+            --region="$REGION" --project="$PROJECT" --wait
+
+      - name: Deploy the service
+        id: deploy
+        env:
+          STAGING_DB_NAME: ${{ vars.GCP_STAGING_DB_NAME }}
+          STAGING_DB_USER: ${{ vars.GCP_STAGING_DB_USER }}
+          DB_HOST: ${{ vars.GCP_DB_HOST }}
+          DB_PORT: ${{ vars.GCP_DB_PORT }}
+          DB_SSL_CA: ${{ vars.GCP_DB_SSL_CA }}
+          AWS_KEY_ID: ${{ vars.GCP_AWS_KEY_ID }}
+          AWS_REGION: ${{ vars.GCP_AWS_REGION }}
+          AWS_BUCKET: ${{ vars.GCP_AWS_BUCKET }}
+          AWS_URL: ${{ vars.GCP_AWS_URL }}
+          DEPLOY_ENV_FILE: /dev/null
+        run: |
+          set -euo pipefail
+
+          # APP_URL needs the service's own URL, which Cloud Run only assigns
+          # once the service exists. render.sh treats STAGING_URL as optional
+          # and drops APP_URL entirely on a first deploy; the second render
+          # below then fills it in. Same chicken-and-egg as WORKER_URL in
+          # production.
+          URL="$(gcloud run services describe "$SERVICE" \
+            --region="$REGION" --project="$PROJECT" \
+            --format='value(status.url)' 2>/dev/null || true)"
+
+          if [ -z "$URL" ]; then
+            echo "Service does not exist yet -- bootstrapping to obtain its URL."
+            ./deploy/cloudrun/render.sh mcp-staging > /tmp/bootstrap.yaml
+            gcloud run services replace /tmp/bootstrap.yaml \
+              --region="$REGION" --project="$PROJECT"
+            URL="$(gcloud run services describe "$SERVICE" \
+              --region="$REGION" --project="$PROJECT" --format='value(status.url)')"
+          fi
+
+          STAGING_URL="$URL" ./deploy/cloudrun/render.sh mcp-staging > /tmp/mcp-staging.yaml
+          gcloud run services replace /tmp/mcp-staging.yaml \
+            --region="$REGION" --project="$PROJECT"
+
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # Every curl is bounded. Without --max-time a container that accepts the
+      # connection and then never answers hangs the step until the job timeout:
+      # that is how a 16-second smoke test in docker-build.yml once consumed 27
+      # minutes and reported `cancelled`, which reads exactly like a test
+      # failure and is not one.
+      - name: Check the service answers
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -sf --connect-timeout 5 --max-time 15 "$URL/up" >/dev/null; then
+              echo "Healthy after ~$((i * 5))s."
+              exit 0
+            fi
+            echo "Attempt $i -- not answering yet."
+            sleep 5
+          done
+          echo "::error::$URL/up never became healthy."
+          exit 1
+
+      - name: Summarise
+        if: always()
+        env:
+          BRANCH: ${{ github.ref_name }}
+          IMAGE_REF: ${{ needs.image.outputs.image_ref }}
+          URL: ${{ steps.deploy.outputs.url }}
+          PREVIOUS: ${{ steps.current.outputs.previous }}
+          MIGRATED: ${{ inputs.run_migrations }}
+        run: |
+          {
+            echo "## Staging deploy"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Branch | \`$BRANCH\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Source image | \`$IMAGE_REF\` |"
+            echo "| Artifact Registry tag | \`$TAG\` |"
+            echo "| URL | ${URL:-—} |"
+            echo "| Migrations | $MIGRATED |"
+            echo "| Previously deployed | \`$PREVIOUS\` |"
+            echo
+            echo "To put the previous image back, dispatch this workflow from"
+            echo "the branch whose commit appears in that tag."
+          } >> "$GITHUB_STEP_SUMMARY"

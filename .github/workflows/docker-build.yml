@@ -385,8 +385,16 @@ jobs:
             -e AUTORUN_LARAVEL_OPTIMIZE=false \
             "$IMAGE"
 
+          # Every curl is bounded. The retry loop is 20 attempts at 3s, so this
+          # step should never exceed a couple of minutes -- but an unbounded
+          # curl does not fail when a container accepts the connection and then
+          # never answers, it waits. On 2026-10-08 that turned a 16-second
+          # smoke test into a 27-minute one that hit the job's
+          # `timeout-minutes: 30` and reported `cancelled`, which is
+          # indistinguishable at a glance from a genuine test failure.
           for i in {1..20}; do
-            if curl -sf http://localhost:${{ matrix.port }}/up; then
+            if curl -sf --connect-timeout 5 --max-time 15 \
+                 http://localhost:${{ matrix.port }}/up; then
               echo "Health check passed"
               break
             fi
@@ -399,7 +407,8 @@ jobs:
             sleep 3
           done
 
-          curl -I http://localhost:${{ matrix.port }}/ | grep -E "(200|302)"
+          curl -I --connect-timeout 5 --max-time 15 \
+            http://localhost:${{ matrix.port }}/ | grep -E "(200|302)"
 
           docker stop test-container
           docker rm test-container
@@ -448,19 +457,15 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  deploy-staging:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
-
-    steps:
-      - name: Deploy to staging
-        run: |
-          echo "Deploying to staging environment..."
-          # Add your staging deployment logic here
-          # Example: kubectl, docker-compose, or other deployment tools
+  # There is no deploy-staging job here. The one that used to sit at this point
+  # echoed "Deploying to staging environment..." and was gated on a `develop`
+  # branch that has never existed, so it reported "skipped" on every run and
+  # looked like a staging deploy that worked. Staging now has a real,
+  # dispatch-only workflow: .github/workflows/deploy-staging.yml.
+  #
+  # It is not triggered from here on purpose. Staging is one shared service and
+  # exists for looking at a branch before it merges, which is a decision someone
+  # makes rather than a consequence of pushing.
 
   # Deploys to Cloud Run. Requires these GitHub repository variables:
   #   GCP_PROJECT       e.g. invoiceink-prod

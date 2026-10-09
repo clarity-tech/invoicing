@@ -886,6 +886,67 @@ The `build-and-push` job needs `outputs: digest: ${{ steps.build.outputs.digest 
 added so the deploy job references the exact image built rather than re-resolving
 `latest`.
 
+### Staging deploys
+
+`.github/workflows/deploy-staging.yml` deploys a branch to
+`invoicing-mcp-staging` (§9) on demand. **Actions -> Deploy to staging -> Run
+workflow**, pick the branch in GitHub's own "Use workflow from" dropdown, and
+optionally untick migrations.
+
+It is `workflow_dispatch` only. Staging is a single shared service used to look
+at a branch before it merges, which is a decision someone makes rather than a
+consequence of pushing. The `deploy-staging` stub that previously sat in
+`docker-build.yml` echoed a string and was gated on a `develop` branch that has
+never existed, so it reported "skipped" on every run while looking like a
+staging deploy that worked.
+
+The branch is the dispatch ref, so both jobs work from `github.sha` -- one
+commit, fixed when the run starts. There is no separate ref input: GitHub
+requires a workflow file to exist on whatever the dropdown names, so a second
+selector would only have been needed for branches cut before this landed.
+
+Three things in it are not obvious:
+
+- **A pull request has no image.** `build-and-push` sets
+  `push: github.event_name != 'pull_request'`, so a PR's image is only ever
+  loaded into the runner's local daemon. The workflow therefore reads CI's
+  `sha-<commit>` tag when one exists -- which it will for anything already on
+  `main` -- and builds the image itself when it does not.
+- **It never writes `sha-<commit>`.** `release.yml` retags from that tag, and
+  from Artifact Registry's `:<sha>`, to guarantee a released version is
+  byte-identical to the tested artifact. A staging build publishes
+  `staging-<commit>` in both registries so it can never become a candidate for
+  a release retag.
+- **Migrations run as `invoicing-migrate-staging`**, a job of its own, created
+  on first dispatch. Its environment is derived from `mcp-staging.yaml` by
+  `update-jobs.sh --service mcp-staging`, and is synced *before* the first
+  execution rather than after: a newly created job carries no environment at
+  all, so migrating first would run against whatever the image defaults to
+  instead of the staging schema. The service-to-jobs mapping in that script is
+  fixed rather than a free-form `--jobs` flag, because a mistake there points
+  production's migrate job at the staging schema and the next production deploy
+  then migrates staging and serves an un-migrated production.
+
+The deploy tooling -- `render.sh`, `update-jobs.sh`, `mcp-staging.yaml` -- comes
+from the dispatched branch along with the application code, so a change to the
+manifest can be exercised on staging before it reaches production. The
+corollary is that a branch's copy of those scripts runs with credentials that
+can reach production's Cloud Run jobs, so changes under `deploy/` deserve the
+same review attention as a production deploy.
+
+Required repository variables, in addition to the `GCP_*` set above:
+
+| Variable | Value |
+|---|---|
+| `GCP_STAGING_DB_NAME` | the staging schema, never the production one |
+| `GCP_STAGING_DB_USER` | an account granted only on that schema |
+
+`APP_KEY_STAGING` and `DB_PASSWORD_STAGING` must exist in Secret Manager; the
+manifest references them by name. §9's `mcp-staging.yaml` header explains what
+else is deliberately severed -- `QUEUE_CONNECTION=sync`, `MAIL_MAILER=log`, and
+`MEDIA_PREFIX=staging` so staging uploads cannot overwrite production objects in
+the shared bucket.
+
 ---
 
 ## 15. Cutover sequence
