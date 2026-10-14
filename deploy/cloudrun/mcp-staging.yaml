@@ -42,7 +42,7 @@
 # APP_ENV stays "production" on purpose. Using "staging" would flip
 # app()->isProduction() to false, which re-enables the MCP_LOCAL_USER_EMAIL
 # fallback in ResolvesActingOrganization. That fallback is unreachable over HTTP
-# (auth:sanctum rejects first) but the gate is environment-name-based, so the
+# (auth:sanctum,api rejects first) but the gate is environment-name-based, so the
 # safer and higher-fidelity choice is to leave the environment identical to
 # production and distinguish this service by its name and database instead.
 #
@@ -183,6 +183,18 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: AWS_SECRET_ACCESS_KEY
+                  key: latest
+            # A distinct pair, for the same reason as APP_KEY_STAGING: a token
+            # signed here must never verify against production.
+            - name: PASSPORT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: PASSPORT_PRIVATE_KEY_STAGING
+                  key: latest
+            - name: PASSPORT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: PASSPORT_PUBLIC_KEY_STAGING
                   key: latest
           startupProbe:
             httpGet:

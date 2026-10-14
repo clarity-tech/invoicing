@@ -98,10 +98,11 @@ spec:
 
             # Serves the read-only MCP server at POST /mcp. Off unless set, so
             # the endpoint exists only where it is meant to. Every request needs
-            # a Sanctum API token (Settings -> AI connection) and is throttled
-            # to 60 a minute; tools read only the token owner's current
-            # organization. Like the task handler, this decides at container
-            # start whether the route exists, as route:cache runs there.
+            # an OAuth token from signing in, or a Sanctum API token (Settings
+            # -> Connect AI tools), and is throttled to 60 a minute; tools read
+            # only the token owner's current organization. Like the task
+            # handler, this decides at container start whether the route
+            # exists, as route:cache runs there.
             - name: MCP_WEB_ENABLED
               value: "true"
 
@@ -173,6 +174,21 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: AWS_SECRET_ACCESS_KEY
+                  key: latest
+            # Sign and verify the OAuth tokens Claude's connectors use for
+            # /mcp. Required, not optional: Passport loads the public key on
+            # every unauthenticated /mcp request, so without it the 401 that
+            # starts the sign-in flow becomes a 500. Created once by
+            # create-passport-keys.sh; every instance must share the pair.
+            - name: PASSPORT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: PASSPORT_PRIVATE_KEY
+                  key: latest
+            - name: PASSPORT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: PASSPORT_PUBLIC_KEY
                   key: latest
           startupProbe:
             httpGet:
