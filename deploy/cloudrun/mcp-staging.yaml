@@ -89,8 +89,8 @@ spec:
             - name: LOG_CHANNEL
               value: stderr
 
-            # The reason this service exists. Production leaves it unset, so the
-            # endpoint stays absent there until someone decides otherwise.
+            # The reason this service exists: a place to exercise the endpoint
+            # against its own database. Production serves it too (web.yaml).
             - name: MCP_WEB_ENABLED
               value: "true"
 
