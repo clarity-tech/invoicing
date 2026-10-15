@@ -199,8 +199,9 @@ spec:
           startupProbe:
             httpGet:
               path: /up
-            periodSeconds: 5
-            failureThreshold: 30
+            timeoutSeconds: 1
+            periodSeconds: 1
+            failureThreshold: 150
 
         - name: gotenberg
           image: __REGION__-docker.pkg.dev/__PROJECT__/docker/gotenberg:8
