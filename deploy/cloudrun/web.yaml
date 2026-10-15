@@ -190,6 +190,13 @@ spec:
                 secretKeyRef:
                   name: PASSPORT_PUBLIC_KEY
                   key: latest
+            # Drafting invoices from documents. Create the secret before
+            # deploying: Cloud Run refuses a revision whose secret is missing.
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ANTHROPIC_API_KEY
+                  key: latest
           startupProbe:
             httpGet:
               path: /up
