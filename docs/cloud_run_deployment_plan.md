@@ -266,8 +266,8 @@ exposed."*
 
 **B6 — `AUTORUN_LARAVEL_OPTIMIZE=true`** runs the whole `optimize` bundle on every
 cold start. Only `view:cache` and `event:cache` are environment-independent and can
-be baked into the image; `config:cache` **and `route:cache`** must stay at container
-start — see §7.1.1 for why baking route caching is actively unsafe here.
+be baked into the image; `config:cache` **and `route:cache`** cannot be (see
+§7.1.1) and are not worth running at container start under Octane.
 ServerSideUp exposes the caches individually, so no custom entrypoint is needed.
 
 **B7 — App name mismatch.** `config/app.php:16`, `.env.example:1` and
@@ -310,7 +310,7 @@ Replace the `composer dump-autoload` block, the `ENV` block and the `CMD`:
 # every cold start.
 #
 # route:cache is deliberately NOT baked — see §7.1.1.
-# config:cache is likewise left to runtime; it would freeze build-time env.
+# config:cache is likewise not baked; it would freeze build-time env.
 ARG BUILD_APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
     && APP_ENV=production APP_DEBUG=false APP_KEY=${BUILD_APP_KEY} \
@@ -326,10 +326,10 @@ ENV AUTORUN_ENABLED=true \
     # true in app.env, where single-container startup makes it safe.
     AUTORUN_LARAVEL_MIGRATION=false \
     AUTORUN_LARAVEL_MIGRATION_ISOLATION=true \
-    # Only config:cache needs runtime env; the rest are baked above.
+    # view/event are baked above; config/route are not worth a cold start.
     AUTORUN_LARAVEL_OPTIMIZE=false \
-    AUTORUN_LARAVEL_CONFIG_CACHE=true \
-    AUTORUN_LARAVEL_ROUTE_CACHE=true \
+    AUTORUN_LARAVEL_CONFIG_CACHE=false \
+    AUTORUN_LARAVEL_ROUTE_CACHE=false \
     AUTORUN_LARAVEL_VIEW_CACHE=false \
     AUTORUN_LARAVEL_EVENT_CACHE=false \
     # Everything user-facing lives on S3; no public symlink needed.
@@ -925,10 +925,11 @@ for the session. Co-locating the region helps most. `SESSION_DRIVER=cookie` woul
 eliminate the read entirely at the cost of a ~4KB ceiling on session data — worth
 testing once running.
 
-**Cold starts.** Octane boot plus `config:cache` on a scale-from-zero instance.
-Baking route/view/event caches helps and startup CPU boost helps more, but this
-should be measured rather than predicted. If unacceptable, `minScale: 1` on web is
-the lever — at the cost of idle billing, which is what this design exists to avoid.
+**Cold starts.** A request that woke `invoicing-web` took 10.5–11s, over the 10s
+Claude's MCP connectors allow for OAuth calls. Runtime `config:cache` and
+`route:cache` (~4s) are off and the startup probe polls every second. If that is
+not enough, `minScale: 1` on web is the lever — at the cost of idle billing,
+which is what this design exists to avoid.
 
 **Cost.** Cloud Run and Cloud Tasks should be near-free at this volume; the
 external DB is billed independently as today. Verify against the
