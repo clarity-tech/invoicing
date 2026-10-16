@@ -8,7 +8,7 @@ use App\Models\User;
  *
  * @return array{0: User, 1: Organization}
  */
-function createSetupUser(string $email, string $name = 'Manash Sonowal'): array
+function createSetupUser(string $email, string $name = 'Maya Sharma'): array
 {
     $user = User::factory()->withPersonalTeam()->create([
         'name' => $name,
@@ -40,7 +40,7 @@ it('completes full registration flow', function () {
     $page->assertSee('Register')
         ->screenshot(fullPage: true, filename: 'demo/12-register-form');
 
-    $page->fill('#name', 'Manash Sonowal')
+    $page->fill('#name', 'Maya Sharma')
         ->fill('#email', 'accounts@claritytech.io')
         ->fill('#password', 'Password123!')
         ->fill('#password_confirmation', 'Password123!')
@@ -67,7 +67,7 @@ it('redirects non-personal team to setup wizard', function () {
 // ─── Test 3: Full Indian company setup with all fields ───
 
 it('completes Indian company setup with all fields', function () {
-    [$user] = createSetupUser('setup-india@example.test', 'Manash Sonowal');
+    [$user] = createSetupUser('setup-india@example.test', 'Maya Sharma');
 
     $this->actingAs($user);
 
@@ -85,7 +85,7 @@ it('completes Indian company setup with all fields', function () {
         ->fill('#notes', 'Indian IT services company specializing in web development')
         ->fill('input[aria-describedby="error-emails-0"]', 'accounts@claritytech.io')
         ->click('button.text-primary')
-        ->fill('input[aria-describedby="error-emails-1"]', 'manash@claritytech.io')
+        ->fill('input[aria-describedby="error-emails-1"]', 'maya@example.test')
         ->fill('#phone', '+91-9876543210')
         ->screenshot(fullPage: true, filename: 'demo/17-setup-step1-filled')
         ->click('Next');

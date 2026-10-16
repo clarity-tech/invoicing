@@ -26,7 +26,7 @@ it('shows customer details and locations', function () {
     $org = detailPageOrganization($user);
 
     $customer = createCustomerWithLocation([
-        'name' => 'Krishna Institute of Medical Sciences Limited',
+        'name' => 'Riverbend Institute of Medical Sciences Limited',
         'phone' => '+914044885000',
         'phone_country' => 'IN',
         'currency' => 'INR',
@@ -41,7 +41,7 @@ it('shows customer details and locations', function () {
 
     visit("/customers/{$customer->id}")
         ->assertNoJavaScriptErrors()
-        ->assertSee('Krishna Institute of Medical Sciences Limited')
+        ->assertSee('Riverbend Institute of Medical Sciences Limited')
         ->assertSee('Locations (1)')
         ->assertSee('Head Office')
         ->assertSee('Primary')

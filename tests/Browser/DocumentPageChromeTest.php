@@ -22,9 +22,9 @@ it('frames the document with chrome that stays put while the document scrolls', 
         'company_name' => 'Clarity Technologies',
         'currency' => 'INR',
         'country_code' => 'IN',
-    ], ['tax_id' => '18ASBPB0118P1ZX'], $user);
+    ], ['tax_id' => '18AAACC1234C1Z5'], $user);
 
-    $customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $org);
+    $customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $org);
 
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-CHROME',

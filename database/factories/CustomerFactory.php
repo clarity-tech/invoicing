@@ -347,22 +347,22 @@ class CustomerFactory extends Factory
     }
 
     /**
-     * UAE customer (RxNow, 1115inc style)
+     * UAE customer (Sandline, Corniche Labs style)
      */
     public function uaeCustomer(): static
     {
         return $this->state([
             'name' => fake()->randomElement([
-                'RxNow LLC',
-                '1115inc',
+                'Sandline LLC',
+                'Corniche Labs',
                 'Emirates Trading Co',
                 'Dubai Business Solutions',
                 'Abu Dhabi Enterprises',
                 'Gulf Commercial Ltd',
             ]),
             'emails' => new ContactCollection(fake()->randomElement([
-                [['name' => 'Billing', 'email' => 'billing@rxnow.test'], ['name' => 'Finance', 'email' => 'finance@rxnow.test']],
-                [['name' => 'Ayshwarya', 'email' => 'ayshwarya@1115inc.test'], ['name' => 'Consultant', 'email' => 'consult@1115inc.test']],
+                [['name' => 'Billing', 'email' => 'billing@sandline.test'], ['name' => 'Finance', 'email' => 'finance@sandline.test']],
+                [['name' => 'Priya', 'email' => 'priya@cornichelabs.test'], ['name' => 'Consultant', 'email' => 'consult@cornichelabs.test']],
                 [['name' => 'Info', 'email' => 'info@'.fake()->lexify('????????').'.test']],
             ])),
             'phone' => '+9714'.fake()->numerify('#######'),
@@ -373,7 +373,7 @@ class CustomerFactory extends Factory
             $location = Location::factory()
                 ->forCustomer($customer->id)
                 ->create([
-                    'name' => $customer->name === 'RxNow LLC' ? 'RxNow Healthcare HQ' : $customer->name,
+                    'name' => $customer->name === 'Sandline LLC' ? 'Sandline Healthcare HQ' : $customer->name,
                     'address_line_1' => fake()->randomElement([
                         'Dubai Healthcare City',
                         'Al Warsan Towers, 305',

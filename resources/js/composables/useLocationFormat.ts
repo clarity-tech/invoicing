@@ -44,7 +44,7 @@ function stateUnlessEchoingCity(loc: PartialLocation): string {
 
 /**
  * Full single-line address for a location:
- * "Shop 12, The Wings block B, Arjan, DUBAI, United Arab Emirates".
+ * "Unit 4, Palm Court, Al Barsha, DUBAI, United Arab Emirates".
  *
  * Empty parts are skipped rather than leaving dangling commas, and the
  * state is omitted when it duplicates the city.

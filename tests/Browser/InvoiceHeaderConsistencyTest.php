@@ -52,7 +52,7 @@ it('keeps the shared controls in the same place on the detail and edit pages', f
         'setup_completed_at' => now(),
     ], [], $user);
 
-    $customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $org);
+    $customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $org);
 
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-HEADER',

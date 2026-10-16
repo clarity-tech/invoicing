@@ -19,7 +19,7 @@ beforeEach(function () {
 function customerOwingTwo(array $organizationAttributes = []): array
 {
     $organization = createOrganizationWithLocation(array_merge(['ai_drafting_enabled' => true], $organizationAttributes));
-    $customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $organization);
+    $customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $organization);
     $owed = fn (string $number, string $dueAt, int $total) => createInvoiceWithItems([
         'invoice_number' => $number,
         'status' => InvoiceStatus::SENT,
@@ -41,13 +41,13 @@ function postReminderDraft(User $user, Customer $customer, array $invoiceIds, ar
 
 it('writes one reminder from the selected invoices', function () {
     [$customer, $later, $earlier] = customerOwingTwo();
-    EmailWriter::fake([['subject' => 'Two invoices awaiting payment', 'paragraphs' => ['Dear RxNow Pharmacy LLC,']]]);
+    EmailWriter::fake([['subject' => 'Two invoices awaiting payment', 'paragraphs' => ['Dear Sandline Pharmacy LLC,']]]);
 
     postReminderDraft($customer->organization->owner, $customer, [$later->id, $earlier->id])
         ->assertOk()
-        ->assertExactJson(['subject' => 'Two invoices awaiting payment', 'body' => '<p>Dear RxNow Pharmacy LLC,</p>']);
+        ->assertExactJson(['subject' => 'Two invoices awaiting payment', 'body' => '<p>Dear Sandline Pharmacy LLC,</p>']);
 
-    EmailWriter::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('To: RxNow Pharmacy LLC')
+    EmailWriter::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('To: Sandline Pharmacy LLC')
         && $prompt->contains('Invoices: REM-AI-EARLIER: balance ₹1,180.00, due 6 Oct 2026, overdue by 10 days; REM-AI-LATER: balance ₹500.00, due 30 Oct 2026')
         && $prompt->contains('Total due: ₹1,680.00')
         && $prompt->contains('Tone: formal'));

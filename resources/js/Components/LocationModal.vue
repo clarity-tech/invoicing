@@ -47,7 +47,7 @@ function validateGstin() {
 
         if (!gstinRegex.test(val.toUpperCase())) {
             fieldErrors.value.tax_id =
-                'Invalid GSTIN format. Expected: 29AAFCD9711R1ZV (15 characters)';
+                'Invalid GSTIN format. Expected: 29ABCDE1234F1Z5 (15 characters)';
 
             return;
         }
@@ -241,7 +241,7 @@ function submit() {
                                         "
                                         :placeholder="
                                             isIndia
-                                                ? 'e.g., 29AAFCD9711R1ZV'
+                                                ? 'e.g., 29ABCDE1234F1Z5'
                                                 : ''
                                         "
                                         :maxlength="isIndia ? 15 : 50"
@@ -273,7 +273,7 @@ function submit() {
                                         class="mt-1 text-xs text-faint-foreground"
                                     >
                                         15-character alphanumeric (e.g.,
-                                        29AAFCD9711R1ZV)
+                                        29ABCDE1234F1Z5)
                                     </p>
                                 </div>
                                 <div>

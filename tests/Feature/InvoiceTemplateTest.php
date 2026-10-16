@@ -15,11 +15,11 @@ test('public invoice template renders with all new elements', function () {
             'pan' => 'ABCDE1234F',
         ],
     ], [
-        'tax_id' => '18ASBPB0118P1ZX',
+        'tax_id' => '18AAACC1234C1Z5',
     ]);
 
     $customer = createCustomerWithLocation([], [
-        'tax_id' => '36AACCK2540G1ZU',
+        'tax_id' => '36AAACR5678R1ZQ',
         'state' => 'Telangana',
     ], $organization);
 

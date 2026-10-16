@@ -26,7 +26,7 @@ it('renders the invoice list actions without clipping at desktop width', functio
     }
 
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'invoice-list-layout@example.test',
     ]);
 
@@ -38,16 +38,16 @@ it('renders the invoice list actions without clipping at desktop width', functio
     ], [], $user);
 
     // Longest name: the worst case for the un-bounded customer column.
-    $krishna = createCustomerWithLocation([
-        'name' => 'Krishna Institute of Medical Sciences Limited',
+    $riverbend = createCustomerWithLocation([
+        'name' => 'Riverbend Institute of Medical Sciences Limited',
     ], [], $org);
 
-    $rxnow = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
+    $sandline = createCustomerWithLocation([
+        'name' => 'Sandline Pharmacy LLC',
     ], [], $org);
 
-    $doconline = createCustomerWithLocation([
-        'name' => 'DOCONLINE HEALTH INDIA PRIVATE LIMITED',
+    $brightcare = createCustomerWithLocation([
+        'name' => 'BRIGHTCARE HEALTH INDIA PRIVATE LIMITED',
     ], [], $org);
 
     // An estimate row: the type badge now shares the Number column with the
@@ -65,7 +65,7 @@ it('renders the invoice list actions without clipping at desktop width', functio
         'subtotal' => 20000000,
         'tax' => 3600000,
         'total' => 23600000,
-    ], null, $org, $krishna);
+    ], null, $org, $riverbend);
 
     createInvoiceWithItems([
         'invoice_number' => 'CT-INV-001',
@@ -76,7 +76,7 @@ it('renders the invoice list actions without clipping at desktop width', functio
         'subtotal' => 32500000,
         'tax' => 5850000,
         'total' => 38350000,
-    ], null, $org, $rxnow);
+    ], null, $org, $sandline);
 
     createInvoiceWithItems([
         'invoice_number' => 'CT-INV-002',
@@ -87,7 +87,7 @@ it('renders the invoice list actions without clipping at desktop width', functio
         'subtotal' => 12500000,
         'tax' => 2250000,
         'total' => 14750000,
-    ], null, $org, $doconline);
+    ], null, $org, $brightcare);
 
     $this->actingAs($user);
 
@@ -104,7 +104,7 @@ it('renders the invoice list actions without clipping at desktop width', functio
         // Moved to the document's own page, reached from the number.
         ->assertDontSee('Convert')
         ->assertDontSee('Delete')
-        ->assertSee('Krishna Institute of Medical Sciences Limited')
+        ->assertSee('Riverbend Institute of Medical Sciences Limited')
         // The real regression guard: the table's scroll container must not
         // overflow horizontally at desktop width (1px tolerance for rounding).
         ->assertScript(

@@ -140,8 +140,8 @@ describe('Customers/Show', () => {
     it('renders a location address without repeating a state that echoes the city', () => {
         const dubaiOffice = makeLocation({
             id: 1,
-            name: 'RXNOW Pharmacy LLC',
-            address_line_1: 'Shop 12, The Wings block B, Arjan',
+            name: 'SANDLINE Pharmacy LLC',
+            address_line_1: 'Unit 4, Palm Court, Al Barsha',
             city: 'DUBAI',
             state: 'Dubai',
             country: 'AE',
@@ -161,7 +161,7 @@ describe('Customers/Show', () => {
         expect(wrapper.text()).not.toContain('DUBAI, Dubai');
 
         expect(wrapper.text()).toContain(
-            'Shop 12, The Wings block B, Arjan, DUBAI, United Arab Emirates',
+            'Unit 4, Palm Court, Al Barsha, DUBAI, United Arab Emirates',
         );
     });
 

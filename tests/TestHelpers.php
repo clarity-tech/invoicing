@@ -269,7 +269,7 @@ if (! function_exists('seedInvoiceListFixture')) {
     function seedInvoiceListFixture(int $documents = 1): array
     {
         $user = User::factory()->withPersonalTeam()->create([
-            'name' => 'Manash Sonowal',
+            'name' => 'Maya Sharma',
             'email' => 'invoice-list-a11y@example.test',
         ]);
 
@@ -281,7 +281,7 @@ if (! function_exists('seedInvoiceListFixture')) {
         ], [], $user);
 
         $customer = createCustomerWithLocation([
-            'name' => 'Krishna Institute of Medical Sciences Limited',
+            'name' => 'Riverbend Institute of Medical Sciences Limited',
         ], [], $organization);
 
         createInvoiceWithItems([

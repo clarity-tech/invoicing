@@ -502,12 +502,12 @@ test('organization hasBankDetails returns false when bank_name is missing', func
 test('organization bank_details is cast to BankDetails value object', function () {
     $bankDetails = [
         'account_name' => 'Clarity Technologies',
-        'account_number' => '654902 0000 1952',
+        'account_number' => '123456 0000 7890',
         'bank_name' => 'Bank of Baroda',
-        'ifsc' => 'BARB0VJGOLA',
-        'branch' => 'GOLAGHAT',
-        'swift' => 'BARBINBBATR',
-        'pan' => 'ASBPB0118P',
+        'ifsc' => 'BARB0MGROAD',
+        'branch' => 'MG ROAD',
+        'swift' => 'BARBINBBXXX',
+        'pan' => 'ABCPE1234F',
     ];
 
     $organization = createOrganizationWithLocation([
@@ -516,12 +516,12 @@ test('organization bank_details is cast to BankDetails value object', function (
 
     expect($organization->bank_details)->toBeInstanceOf(BankDetails::class);
     expect($organization->bank_details->bankName)->toBe('Bank of Baroda');
-    expect($organization->bank_details->ifsc)->toBe('BARB0VJGOLA');
+    expect($organization->bank_details->ifsc)->toBe('BARB0MGROAD');
     expect($organization->bank_details->accountName)->toBe('Clarity Technologies');
-    expect($organization->bank_details->accountNumber)->toBe('654902 0000 1952');
-    expect($organization->bank_details->branch)->toBe('GOLAGHAT');
-    expect($organization->bank_details->swift)->toBe('BARBINBBATR');
-    expect($organization->bank_details->pan)->toBe('ASBPB0118P');
+    expect($organization->bank_details->accountNumber)->toBe('123456 0000 7890');
+    expect($organization->bank_details->branch)->toBe('MG ROAD');
+    expect($organization->bank_details->swift)->toBe('BARBINBBXXX');
+    expect($organization->bank_details->pan)->toBe('ABCPE1234F');
 });
 
 // --- Setup tracking methods ---

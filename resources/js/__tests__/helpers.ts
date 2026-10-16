@@ -41,7 +41,7 @@ export function makeOrganization(
 ): Organization {
     return {
         id: 1,
-        name: "Manash's Team",
+        name: "Maya's Team",
         company_name: 'Clarity Technologies',
         currency: 'INR',
         country_code: 'IN',
@@ -207,7 +207,7 @@ export function makeSharedPageProps(overrides: Record<string, unknown> = {}) {
                 },
                 currentTeam: {
                     id: 1,
-                    name: "Manash's Team",
+                    name: "Maya's Team",
                     company_name: 'Clarity Technologies',
                     currency: 'INR',
                 },

@@ -18,7 +18,7 @@ use App\Models\User;
 function focusFixture(string $email): array
 {
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => $email,
     ]);
 
@@ -42,7 +42,7 @@ const ACTIVE_EL = 'function () {
 it('keeps focus in the document after deleting a customer', function () {
     [$user, $org] = focusFixture('focus-cust@example.test');
     createCustomerWithLocation(['name' => 'Acme Diagnostics Ltd'], [], $org);
-    createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $org);
+    createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $org);
 
     $this->actingAs($user);
 
@@ -79,7 +79,7 @@ it('keeps focus in the document after force-deleting a trashed customer', functi
     // defect, one round trip later.
     [$user, $org] = focusFixture('focus-cust-trash@example.test');
 
-    foreach (['Acme Diagnostics Ltd', 'RxNow Pharmacy LLC'] as $n) {
+    foreach (['Acme Diagnostics Ltd', 'Sandline Pharmacy LLC'] as $n) {
         $c = createCustomerWithLocation(['name' => $n], [], $org);
         $c->delete();
     }

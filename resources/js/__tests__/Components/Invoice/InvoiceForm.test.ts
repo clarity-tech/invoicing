@@ -1388,7 +1388,7 @@ describe('Invoice/InvoiceForm', () => {
             });
             const foreignCustomer = makeCustomer({
                 id: 1,
-                name: 'RxNow LLC',
+                name: 'Sandline LLC',
                 currency: 'AED',
                 primary_location_id: 30,
                 primary_location: foreign,

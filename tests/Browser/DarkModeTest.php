@@ -27,7 +27,7 @@ const IS_DARK = "document.documentElement.classList.contains('dark')";
 function darkModeUser(): User
 {
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'dark-mode-'.uniqid().'@example.test',
     ]);
 
@@ -278,7 +278,7 @@ function darkModeFixture(): array
     $user = darkModeUser();
     $user->currentTeam->update(['ai_drafting_enabled' => true]);
     $organization = $user->fresh()->currentTeam;
-    $customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $organization);
+    $customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $organization);
     // Dated, so the editor's "Save & Send" can save it on the way to the email.
     $invoice = createInvoiceWithItems([
         'status' => 'sent',
@@ -398,12 +398,12 @@ it('keeps the dialogs legible in dark mode', function (string $path, string $ope
     assertNoContrastFailures($page);
 })->with([
     'record payment' => ['/invoices/{invoice}', 'Record payment', 'Balance Due'],
-    'email' => ['/invoices/{invoice}/edit', 'Save & Send', 'Email to RxNow Pharmacy LLC'],
+    'email' => ['/invoices/{invoice}/edit', 'Save & Send', 'Email to Sandline Pharmacy LLC'],
     'delete confirmation' => ['/invoices/{invoice}', '[aria-label^="Delete invoice"]', 'moves to Trash'],
     'add customer' => ['/customers', 'Add Customer', 'Create Customer'],
     'add location' => ['/customers/{customer}', 'button:has-text("Add location")', 'Location Name'],
-    'reminder' => ['/invoices/{invoice}', 'button:has-text("Remind")', 'Email to RxNow Pharmacy LLC'],
-    'customer reminder' => ['/customers/{customer}', 'button:has-text("Send reminder")', 'Remind RxNow Pharmacy LLC'],
+    'reminder' => ['/invoices/{invoice}', 'button:has-text("Remind")', 'Email to Sandline Pharmacy LLC'],
+    'customer reminder' => ['/customers/{customer}', 'button:has-text("Send reminder")', 'Remind Sandline Pharmacy LLC'],
     'draft with AI' => ['/invoices/create', 'button:has-text("Draft with AI")', 'Draft from a document'],
 ]);
 

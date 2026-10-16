@@ -14,7 +14,7 @@ function seedDemoData(): array
 {
     // 1. User + Organization (Indian company, completed setup, with location)
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'demo-screenshots@example.test',
         'password' => 'password',
     ]);
@@ -45,7 +45,7 @@ function seedDemoData(): array
 
     // Indian customer with GSTIN
     $customers['indian'] = createCustomerWithLocation([
-        'name' => 'DocOnline Health India Pvt Ltd',
+        'name' => 'BrightCare Health India Pvt Ltd',
     ], [
         'name' => 'Bangalore Office',
         'address_line_1' => '14th Floor, Prestige Shantiniketan',
@@ -54,12 +54,12 @@ function seedDemoData(): array
         'state' => 'Karnataka',
         'country' => 'IN',
         'postal_code' => '560048',
-        'tax_id' => '29AAFCD9711R1ZV',
+        'tax_id' => '29ABCDE1234F1Z5',
     ], $org);
 
     // UAE customer
     $customers['uae'] = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
+        'name' => 'Sandline Pharmacy LLC',
     ], [
         'name' => 'Dubai Office',
         'address_line_1' => 'Dubai Healthcare City',

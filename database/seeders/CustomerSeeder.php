@@ -149,21 +149,21 @@ class CustomerSeeder extends ProductionSafeSeeder
 
         // Add foreign customers for Indian organizations
         if (str_contains($organization->name, 'Demo Company')) {
-            // Add RxNow LLC as UAE customer
-            $rxnow = Customer::factory()
+            // Add Sandline LLC as UAE customer
+            $sandline = Customer::factory()
                 ->for($organization)
                 ->create([
-                    'name' => 'RxNow LLC',
-                    'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@rxnow.test'], ['name' => 'Finance', 'email' => 'finance@rxnow.test']]),
+                    'name' => 'Sandline LLC',
+                    'emails' => new ContactCollection([['name' => 'Billing', 'email' => 'billing@sandline.test'], ['name' => 'Finance', 'email' => 'finance@sandline.test']]),
                     'phone' => '+97141234567',
                     'phone_country' => 'AE',
                     'currency' => Currency::AED,
                     'gst_treatment' => GstTreatment::Overseas,
                 ]);
 
-            // Create Dubai location for RxNow
+            // Create Dubai location for Sandline
             $location = Location::create([
-                'name' => 'RxNow Healthcare HQ',
+                'name' => 'Sandline Healthcare HQ',
                 'address_line_1' => 'Dubai Healthcare City',
                 'address_line_2' => 'Building 64, Office 4001',
                 'city' => 'Dubai',
@@ -171,26 +171,26 @@ class CustomerSeeder extends ProductionSafeSeeder
                 'country' => 'AE',
                 'postal_code' => '00000',
                 'locatable_type' => Customer::class,
-                'locatable_id' => $rxnow->id,
+                'locatable_id' => $sandline->id,
             ]);
 
-            $rxnow->update(['primary_location_id' => $location->id]);
-            $foreignCustomers[] = $rxnow;
+            $sandline->update(['primary_location_id' => $location->id]);
+            $foreignCustomers[] = $sandline;
 
-            // Add 1115inc as another UAE customer
-            $inc1115 = Customer::factory()
+            // Add Corniche Labs as another UAE customer
+            $corniche = Customer::factory()
                 ->for($organization)
                 ->create([
-                    'name' => '1115inc',
-                    'emails' => new ContactCollection([['name' => 'Ayshwarya', 'email' => 'ayshwarya@1115inc.test'], ['name' => 'Consultant', 'email' => 'consult@1115inc.test']]),
+                    'name' => 'Corniche Labs',
+                    'emails' => new ContactCollection([['name' => 'Priya', 'email' => 'priya@cornichelabs.test'], ['name' => 'Consultant', 'email' => 'consult@cornichelabs.test']]),
                     'phone' => '+97147654321',
                     'phone_country' => 'AE',
                     'currency' => Currency::AED,
                     'gst_treatment' => GstTreatment::Overseas,
                 ]);
 
-            $location1115 = Location::create([
-                'name' => '1115inc Office',
+            $cornicheLocation = Location::create([
+                'name' => 'Corniche Labs Office',
                 'address_line_1' => 'Al Warsan Towers, 305',
                 'address_line_2' => 'Barsha Heights',
                 'city' => 'Dubai',
@@ -198,11 +198,11 @@ class CustomerSeeder extends ProductionSafeSeeder
                 'country' => 'AE',
                 'postal_code' => '00000',
                 'locatable_type' => Customer::class,
-                'locatable_id' => $inc1115->id,
+                'locatable_id' => $corniche->id,
             ]);
 
-            $inc1115->update(['primary_location_id' => $location1115->id]);
-            $foreignCustomers[] = $inc1115;
+            $corniche->update(['primary_location_id' => $cornicheLocation->id]);
+            $foreignCustomers[] = $corniche;
         }
 
         if (str_contains($organization->name, 'GlobalCorp Holdings')) {

@@ -24,7 +24,7 @@ function editLayoutFixture(string $email): array
     }
 
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => $email,
     ]);
 
@@ -36,7 +36,7 @@ function editLayoutFixture(string $email): array
     ], [], $user);
 
     $customer = createCustomerWithLocation([
-        'name' => 'Krishna Institute of Medical Sciences Limited',
+        'name' => 'Riverbend Institute of Medical Sciences Limited',
     ], [], $org);
 
     $invoice = createInvoiceWithItems([
@@ -102,7 +102,7 @@ function editLayoutFixture(string $email): array
         'organization_id' => $org->id,
         'invoice_id' => $invoice->id,
         'status' => 'sent',
-        'recipients' => ['accounts@kims.test'],
+        'recipients' => ['accounts@riverbend.test'],
         'sent_at' => now()->subDays(39),
     ]);
 
