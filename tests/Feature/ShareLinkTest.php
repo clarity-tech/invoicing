@@ -32,7 +32,7 @@ beforeEach(function () {
         'company_name' => 'Clarity Technologies',
         'emails' => new ContactCollection([['name' => 'Accounts', 'email' => 'accounts@clarity.test']]),
     ]);
-    $this->customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $this->organization);
+    $this->customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $this->organization);
     $this->invoice = createInvoiceWithItems([
         'invoice_number' => 'INV-SHARE-001',
         'status' => 'sent',
@@ -61,7 +61,7 @@ test('an expired link says who to ask for a new one, and shows nothing else', fu
         ->assertSee('INV-SHARE-001')
         ->assertSee('Clarity Technologies')
         ->assertSee('mailto:accounts@clarity.test', escape: false)
-        ->assertDontSee('RxNow Pharmacy LLC');
+        ->assertDontSee('Sandline Pharmacy LLC');
 });
 
 test('an altered link is refused without saying whose document it was', function (Closure $alter) {
@@ -119,7 +119,7 @@ test('the emailed link opens the document, and the email says until when', funct
 
     $html = (new DocumentMailer(
         $document,
-        new ContactCollection([['name' => 'RxNow', 'email' => 'billing@rxnow.test']]),
+        new ContactCollection([['name' => 'Sandline', 'email' => 'billing@sandline.test']]),
     ))->renderHtml();
 
     expect($html)->toContain('This link works until 13 Nov 2026.');

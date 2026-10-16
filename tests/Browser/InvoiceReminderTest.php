@@ -12,8 +12,8 @@ it('sends an overdue reminder from the list shortcut after review', function () 
     ]);
     $org = createOrganizationWithLocation(['setup_completed_at' => now()], [], $user);
     $customer = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
-        'emails' => [['name' => 'Accounts', 'email' => 'accounts@rxnow.test']],
+        'name' => 'Sandline Pharmacy LLC',
+        'emails' => [['name' => 'Accounts', 'email' => 'accounts@sandline.test']],
     ], [], $org);
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-0201',
@@ -28,10 +28,10 @@ it('sends an overdue reminder from the list shortcut after review', function () 
     $this->visit('/invoices')
         ->waitForText('CT-INV-0201')
         ->click('[aria-label="Remind invoice CT-INV-0201"]')
-        ->waitForText('Email to RxNow Pharmacy LLC')
+        ->waitForText('Email to Sandline Pharmacy LLC')
         ->assertPathIs("/invoices/{$invoice->id}")
         ->assertValue('input[type="text"]', 'Overdue: Invoice #CT-INV-0201 — 10 days past due')
-        ->assertSee('accounts@rxnow.test')
+        ->assertSee('accounts@sandline.test')
         // Sending is synchronous in tests; skip rendering a PDF.
         ->click('label:has-text("CT-INV-0201.pdf")')
         ->click('[role="dialog"] button:has-text("Send")')
@@ -43,7 +43,7 @@ it('sends an overdue reminder from the list shortcut after review', function () 
     $delivery = EmailDelivery::where('invoice_id', $invoice->id)->sole();
 
     expect($delivery->template_type)->toBe(EmailTemplateType::InvoiceOverdue)
-        ->and($delivery->recipients)->toBe(['accounts@rxnow.test']);
+        ->and($delivery->recipients)->toBe(['accounts@sandline.test']);
 });
 
 /**
@@ -54,8 +54,8 @@ function customerOwingTwoInvoices(string $email): array
     $user = User::factory()->withPersonalTeam()->create(['email' => $email]);
     $org = createOrganizationWithLocation(['setup_completed_at' => now()], [], $user);
     $customer = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
-        'emails' => [['name' => 'Accounts', 'email' => 'accounts@rxnow.test']],
+        'name' => 'Sandline Pharmacy LLC',
+        'emails' => [['name' => 'Accounts', 'email' => 'accounts@sandline.test']],
     ], [], $org);
     $owed = fn (string $number, int $daysOverdue) => createInvoiceWithItems([
         'invoice_number' => $number,
@@ -81,7 +81,7 @@ it('sends one reminder for the invoices left selected on the customer page', fun
     $this->visit("/customers/{$customer->id}")
         ->waitForText('Unpaid invoices (3)')
         ->click('button:has-text("Send reminder")')
-        ->waitForText('Remind RxNow Pharmacy LLC')
+        ->waitForText('Remind Sandline Pharmacy LLC')
         ->assertValue('#customer-reminder-subject', 'Payment reminder: CT-INV-0301, CT-INV-0302')
         ->click('[role="dialog"] label:has-text("CT-INV-0302")')
         ->assertValue('#customer-reminder-subject', 'Payment reminder: CT-INV-0301')
@@ -93,7 +93,7 @@ it('sends one reminder for the invoices left selected on the customer page', fun
 
     expect($delivery->invoice_id)->toBe($first->id)
         ->and($delivery->template_type)->toBe(EmailTemplateType::CustomerReminder)
-        ->and($delivery->recipients)->toBe(['accounts@rxnow.test'])
+        ->and($delivery->recipients)->toBe(['accounts@sandline.test'])
         ->and($second->emailDeliveries()->exists())->toBeFalse();
 });
 
@@ -105,12 +105,12 @@ it('switches an invoice reminder to one for all the customer owes', function () 
     $this->visit("/invoices/{$first->id}")
         ->waitForText('CT-INV-0301')
         ->click('button:has-text("Remind")')
-        ->waitForText('RxNow Pharmacy LLC has 2 unpaid invoices.')
+        ->waitForText('Sandline Pharmacy LLC has 2 unpaid invoices.')
         ->click('button:has-text("Send one combined reminder")')
-        ->waitForText('Remind RxNow Pharmacy LLC')
+        ->waitForText('Remind Sandline Pharmacy LLC')
         ->assertSee('CT-INV-0301')
         ->assertSee('CT-INV-0302')
-        ->assertDontSee('Email to RxNow Pharmacy LLC')
+        ->assertDontSee('Email to Sandline Pharmacy LLC')
         ->assertNoJavaScriptErrors();
 });
 
@@ -122,10 +122,10 @@ it('offers the reminder on the edit page too', function () {
     $this->visit("/invoices/{$first->id}/edit")
         ->waitForText('Edit Invoice')
         ->click('button:has-text("Remind")')
-        ->waitForText('Email to RxNow Pharmacy LLC')
+        ->waitForText('Email to Sandline Pharmacy LLC')
         ->assertValue('[role="dialog"] input[type="text"]', 'Overdue: Invoice #CT-INV-0301 — 20 days past due')
         ->click('button:has-text("Send one combined reminder")')
-        ->waitForText('Remind RxNow Pharmacy LLC')
+        ->waitForText('Remind Sandline Pharmacy LLC')
         ->assertValue('#customer-reminder-subject', 'Payment reminder: CT-INV-0301, CT-INV-0302')
         ->assertNoJavaScriptErrors();
 });

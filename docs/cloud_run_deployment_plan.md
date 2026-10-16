@@ -6,8 +6,7 @@ deployment (`prod-docker-compose.yml`) to Google Cloud Run.
 **Status:** **live and fully verified.** Deployed via CI on every push to `main`.
 Every path — web, security split, jobs, scheduler, Cloud Tasks, Gotenberg, and
 the queued mail path through to a delivered PDF — has been exercised against
-production. Verification record in
-[`cloud_run_migration_todo.md`](./cloud_run_migration_todo.md).
+production.
 **Application:** InvoiceInk — <https://invoiceink.claritytech.io>
 
 ---

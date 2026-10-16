@@ -82,8 +82,8 @@ function seedTourData(): array
     $data = seedDemoData();
 
     $emails = [
-        'indian' => 'accounts@doconline.example.test',
-        'uae' => 'billing@rxnow.example.test',
+        'indian' => 'accounts@brightcare.example.test',
+        'uae' => 'billing@sandline.example.test',
         'generic' => 'ap@acme.example.test',
     ];
     foreach ($data['customers'] as $key => $customer) {
@@ -190,7 +190,7 @@ it('tours the account gate pages', function () {
 });
 
 it('tours the setup wizard', function () {
-    $user = User::factory()->withPersonalTeam()->create(['name' => 'Manash Sonowal']);
+    $user = User::factory()->withPersonalTeam()->create(['name' => 'Maya Sharma']);
     $org = $user->currentTeam;
     $org->update([
         'company_name' => 'Fresh Start Studio',

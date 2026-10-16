@@ -95,12 +95,12 @@ test('set returns null from array without bank_name', function () {
 test('roundtrip: set then get preserves data', function () {
     $original = new BankDetails(
         accountName: 'Clarity Technologies',
-        accountNumber: '654902 0000 1952',
+        accountNumber: '123456 0000 7890',
         bankName: 'Bank of Baroda',
-        ifsc: 'BARB0VJGOLA',
-        branch: 'GOLAGHAT',
-        swift: 'BARBINBBATR',
-        pan: 'ASBPB0118P',
+        ifsc: 'BARB0MGROAD',
+        branch: 'MG ROAD',
+        swift: 'BARBINBBXXX',
+        pan: 'ABCPE1234F',
     );
 
     $json = $this->cast->set($this->model, 'bank_details', $original, []);

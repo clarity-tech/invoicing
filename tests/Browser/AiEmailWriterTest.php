@@ -8,8 +8,8 @@ it('writes a reminder with AI in the email dialog, for review before sending', f
     $user = User::factory()->withPersonalTeam()->create(['email' => 'ai-email@example.test']);
     $org = createOrganizationWithLocation(['setup_completed_at' => now(), 'ai_drafting_enabled' => true], [], $user);
     $customer = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
-        'emails' => [['name' => 'Accounts', 'email' => 'accounts@rxnow.test']],
+        'name' => 'Sandline Pharmacy LLC',
+        'emails' => [['name' => 'Accounts', 'email' => 'accounts@sandline.test']],
     ], [], $org);
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-0301',
@@ -20,7 +20,7 @@ it('writes a reminder with AI in the email dialog, for review before sending', f
 
     EmailWriter::fake([[
         'subject' => 'Overdue: invoice CT-INV-0301',
-        'paragraphs' => ['Dear RxNow Pharmacy LLC,', 'Please settle the balance of CT-INV-0301 this week.'],
+        'paragraphs' => ['Dear Sandline Pharmacy LLC,', 'Please settle the balance of CT-INV-0301 this week.'],
     ]]);
 
     $this->actingAs($user);
@@ -44,8 +44,8 @@ it('keeps an AI subject on a combined reminder until it is undone', function () 
     $user = User::factory()->withPersonalTeam()->create(['email' => 'ai-reminder@example.test']);
     $org = createOrganizationWithLocation(['setup_completed_at' => now(), 'ai_drafting_enabled' => true], [], $user);
     $customer = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
-        'emails' => [['name' => 'Accounts', 'email' => 'accounts@rxnow.test']],
+        'name' => 'Sandline Pharmacy LLC',
+        'emails' => [['name' => 'Accounts', 'email' => 'accounts@sandline.test']],
     ], [], $org);
     foreach (['CT-INV-0401' => 20, 'CT-INV-0402' => 5] as $number => $daysOverdue) {
         createInvoiceWithItems(['invoice_number' => $number, 'status' => 'sent', 'due_at' => now()->subDays($daysOverdue)], null, $org, $customer);
@@ -53,7 +53,7 @@ it('keeps an AI subject on a combined reminder until it is undone', function () 
 
     EmailWriter::fake([[
         'subject' => 'Two invoices are overdue',
-        'paragraphs' => ['Dear RxNow Pharmacy LLC,', 'Two of our invoices are now past due.'],
+        'paragraphs' => ['Dear Sandline Pharmacy LLC,', 'Two of our invoices are now past due.'],
     ]]);
 
     $this->actingAs($user);

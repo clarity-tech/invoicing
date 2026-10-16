@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\URL;
  */
 
 /** The host Cloud Tasks delivers jobs to in production. */
-const WORKER_HOST = 'invoicing-worker-6oxcvdd6ea-el.a.run.app';
+const WORKER_HOST = 'invoicing-worker-abc123xyz0-el.a.run.app';
 
 const PUBLIC_URL = 'https://invoiceink.claritytech.io';
 

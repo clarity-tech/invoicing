@@ -21,7 +21,7 @@ use App\Models\User;
 function navUser(string $email, string $orgName): User
 {
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => $email,
     ]);
 
@@ -38,7 +38,7 @@ function navUser(string $email, string $orgName): User
 it('does not overflow the viewport at any width', function () {
     // The longest realistic organization name. The switcher truncates at
     // 12rem, so this is the worst case the desktop nav has to fit.
-    $this->actingAs(navUser('nav-overflow@example.test', 'Krishna Institute of Medical Sciences Limited'));
+    $this->actingAs(navUser('nav-overflow@example.test', 'Riverbend Institute of Medical Sciences Limited'));
 
     $page = visit('/dashboard');
 

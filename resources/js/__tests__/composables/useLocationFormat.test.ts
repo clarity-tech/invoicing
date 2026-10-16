@@ -13,7 +13,7 @@ const countryNames = {
 };
 
 const dubai = {
-    address_line_1: 'Shop 12, The Wings block B, Arjan',
+    address_line_1: 'Unit 4, Palm Court, Al Barsha',
     address_line_2: null,
     city: 'DUBAI',
     state: 'Dubai',
@@ -47,7 +47,7 @@ describe('countryNameFor', () => {
 describe('formatLocationLine', () => {
     it('drops the state when it only echoes the city, in any case', () => {
         expect(formatLocationLine(dubai, countryNames)).toBe(
-            'Shop 12, The Wings block B, Arjan, DUBAI, United Arab Emirates',
+            'Unit 4, Palm Court, Al Barsha, DUBAI, United Arab Emirates',
         );
     });
 
@@ -70,7 +70,7 @@ describe('formatLocationLine', () => {
 
     it('leaves no dangling comma when the state is empty', () => {
         expect(formatLocationLine({ ...dubai, state: '' }, countryNames)).toBe(
-            'Shop 12, The Wings block B, Arjan, DUBAI, United Arab Emirates',
+            'Unit 4, Palm Court, Al Barsha, DUBAI, United Arab Emirates',
         );
     });
 

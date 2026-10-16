@@ -7,10 +7,7 @@
 #
 # Two things to know about the environment it runs in:
 #   - Jobs have no Gotenberg sidecar, so anything rendering a PDF will fail.
-#   - Runs are non-interactive, so any confirm() takes its default answer. That
-#     is why ProductionSeeder reports success while seeding nothing; call
-#     ProductionUserSeeder / ProductionCustomerSeeder / ProductionInvoiceSeeder
-#     directly instead.
+#   - Runs are non-interactive, so any confirm() takes its default answer.
 
 name: Artisan (production)
 
@@ -18,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       command:
-        description: 'Artisan command, e.g. "migrate:status" or "db:seed --class=ProductionUserSeeder --force"'
+        description: 'Artisan command, e.g. "migrate:status"'
         required: true
         type: string
       acknowledge_destructive:

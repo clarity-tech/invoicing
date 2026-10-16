@@ -44,7 +44,7 @@ it('says so when the KPI totals were converted from another currency', function 
     $organization->refresh();
 
     $customer = createCustomerWithLocation(
-        ['name' => 'RxNow Pharmacy LLC', 'currency' => 'AED'],
+        ['name' => 'Sandline Pharmacy LLC', 'currency' => 'AED'],
         [],
         $organization
     );

@@ -9,7 +9,6 @@
 #
 # Usage:
 #   ./deploy/cloudrun/artisan.sh migrate:status
-#   ./deploy/cloudrun/artisan.sh db:seed --class=ProductionUserSeeder --force
 #   ./deploy/cloudrun/artisan.sh "invoices:something --flag=a,b"
 #
 #   ./deploy/cloudrun/artisan.sh --logs migrate:status   # also tail the output
@@ -17,8 +16,7 @@
 # Notes:
 #   - Jobs have NO Gotenberg sidecar, so anything that renders a PDF will fail.
 #     Use the worker service for that (it is what the queue already does).
-#   - Commands are non-interactive: any confirm() prompt takes its default,
-#     which for ProductionSeeder means "no". Call the sub-seeders directly.
+#   - Commands are non-interactive: any confirm() prompt takes its default.
 #   - Default task timeout is whatever the job was created with (600s).
 
 set -euo pipefail

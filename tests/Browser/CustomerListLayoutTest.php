@@ -24,7 +24,7 @@ it('renders the customer list actions without clipping at desktop width', functi
     }
 
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'customer-list-layout@example.test',
     ]);
 
@@ -38,10 +38,10 @@ it('renders the customer list actions without clipping at desktop width', functi
     // Worst case: the longest name, a long email, a real phone (the seeded demo data
     // uses "-", which understates the width), and a long two-part location summary.
     createCustomerWithLocation([
-        'name' => 'Krishna Institute of Medical Sciences Limited',
+        'name' => 'Riverbend Institute of Medical Sciences Limited',
         'phone' => '+914044885000',
         'phone_country' => 'IN',
-        'emails' => new ContactCollection([['name' => 'Accounts Payable', 'email' => 'accounts.payable@kims-hospitals.test']]),
+        'emails' => new ContactCollection([['name' => 'Accounts Payable', 'email' => 'accounts.payable@riverbend-hospitals.test']]),
     ], [
         'city' => 'Secunderabad',
         'state' => 'Telangana',
@@ -49,7 +49,7 @@ it('renders the customer list actions without clipping at desktop width', functi
     ], $org);
 
     createCustomerWithLocation([
-        'name' => 'DOCONLINE HEALTH INDIA PRIVATE LIMITED',
+        'name' => 'BRIGHTCARE HEALTH INDIA PRIVATE LIMITED',
         'phone' => '+914066778899',
         'phone_country' => 'IN',
     ], [
@@ -77,7 +77,7 @@ it('renders the customer list actions without clipping at desktop width', functi
         ->assertSee('Actions')
         ->assertSee('Edit')
         ->assertSee('Delete')
-        ->assertSee('Krishna Institute of Medical Sciences Limited')
+        ->assertSee('Riverbend Institute of Medical Sciences Limited')
         // The zero-location customer is still listed; managing its locations
         // happens on the detail page the name links to.
         ->assertSee('Locationless Trading Company Limited')

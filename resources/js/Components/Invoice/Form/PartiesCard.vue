@@ -98,7 +98,7 @@ function locationLabel(loc: Location): string {
 
                 One column below 1024px. Three across an iPad in portrait left
                 each select about 235px, which cut a customer's name off a
-                third of the way in ("Krishna Institute of Medical Sc").
+                third of the way in ("Riverbend Institute of Medical Sc").
             -->
             <div
                 class="grid gap-5"

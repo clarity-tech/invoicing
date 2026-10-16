@@ -143,7 +143,7 @@ describe('Organizations/Show', () => {
                 primary_location: {
                     id: 1,
                     name: 'Head Office',
-                    tax_id: '29AAFCD9711R1ZV',
+                    tax_id: '29ABCDE1234F1Z5',
                     address_line_1: '123 Main St',
                     address_line_2: 'Suite 100',
                     city: 'Mumbai',
@@ -156,7 +156,7 @@ describe('Organizations/Show', () => {
         expect(wrapper.text()).toContain('Head Office');
         expect(wrapper.text()).toContain('123 Main St');
         expect(wrapper.text()).toContain('Mumbai');
-        expect(wrapper.text()).toContain('29AAFCD9711R1ZV');
+        expect(wrapper.text()).toContain('29ABCDE1234F1Z5');
     });
 
     it('labels the tax number with the country-appropriate name', () => {

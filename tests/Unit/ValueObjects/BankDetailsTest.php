@@ -5,21 +5,21 @@ use App\ValueObjects\BankDetails;
 test('BankDetails can be created with all properties', function () {
     $bank = new BankDetails(
         accountName: 'Clarity Technologies',
-        accountNumber: '654902 0000 1952',
+        accountNumber: '123456 0000 7890',
         bankName: 'Bank of Baroda',
-        ifsc: 'BARB0VJGOLA',
-        branch: 'GOLAGHAT',
-        swift: 'BARBINBBATR',
-        pan: 'ASBPB0118P',
+        ifsc: 'BARB0MGROAD',
+        branch: 'MG ROAD',
+        swift: 'BARBINBBXXX',
+        pan: 'ABCPE1234F',
     );
 
     expect($bank->accountName)->toBe('Clarity Technologies');
-    expect($bank->accountNumber)->toBe('654902 0000 1952');
+    expect($bank->accountNumber)->toBe('123456 0000 7890');
     expect($bank->bankName)->toBe('Bank of Baroda');
-    expect($bank->ifsc)->toBe('BARB0VJGOLA');
-    expect($bank->branch)->toBe('GOLAGHAT');
-    expect($bank->swift)->toBe('BARBINBBATR');
-    expect($bank->pan)->toBe('ASBPB0118P');
+    expect($bank->ifsc)->toBe('BARB0MGROAD');
+    expect($bank->branch)->toBe('MG ROAD');
+    expect($bank->swift)->toBe('BARBINBBXXX');
+    expect($bank->pan)->toBe('ABCPE1234F');
 });
 
 test('BankDetails defaults to empty strings', function () {
@@ -50,11 +50,11 @@ test('BankDetails::fromArray creates instance from associative array', function 
 test('BankDetails::fromArray trims whitespace', function () {
     $bank = BankDetails::fromArray([
         'bank_name' => '  Bank of Baroda  ',
-        'ifsc' => ' BARB0VJGOLA ',
+        'ifsc' => ' BARB0MGROAD ',
     ]);
 
     expect($bank->bankName)->toBe('Bank of Baroda');
-    expect($bank->ifsc)->toBe('BARB0VJGOLA');
+    expect($bank->ifsc)->toBe('BARB0MGROAD');
 });
 
 test('BankDetails::fromArray casts non-string values to string', function () {

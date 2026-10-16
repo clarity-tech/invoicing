@@ -75,7 +75,7 @@ it('renders the invoice detail page for a part-paid overdue document', function 
     }
 
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'invoice-detail@example.test',
     ]);
 
@@ -87,7 +87,7 @@ it('renders the invoice detail page for a part-paid overdue document', function 
     ], ['tax_id' => '29ABCDE1234F1Z5'], $user);
 
     $customer = createCustomerWithLocation([
-        'name' => 'Krishna Institute of Medical Sciences Limited',
+        'name' => 'Riverbend Institute of Medical Sciences Limited',
     ], [], $org);
 
     $invoice = createInvoiceWithItems([
@@ -162,7 +162,7 @@ it('renders the invoice detail page for a part-paid overdue document', function 
         'organization_id' => $org->id,
         'invoice_id' => $invoice->id,
         'status' => 'sent',
-        'recipients' => ['accounts@kims.test'],
+        'recipients' => ['accounts@riverbend.test'],
         'sent_at' => now()->subDays(39),
     ]);
 
@@ -173,7 +173,7 @@ it('renders the invoice detail page for a part-paid overdue document', function 
     $page->assertPathIs("/invoices/{$invoice->id}")
         ->assertNoJavaScriptErrors()
         ->assertSee('CT-INV-0042')
-        ->assertSee('Krishna Institute of Medical Sciences Limited')
+        ->assertSee('Riverbend Institute of Medical Sciences Limited')
         // Part paid, so the figures genuinely differ and each earns a tile.
         ->assertSee('Paid')
         ->assertSee('Balance due')
@@ -252,7 +252,7 @@ it('renders an estimate without payment figures and offers conversion', function
     }
 
     $user = User::factory()->withPersonalTeam()->create([
-        'name' => 'Manash Sonowal',
+        'name' => 'Maya Sharma',
         'email' => 'estimate-detail@example.test',
     ]);
 
@@ -264,7 +264,7 @@ it('renders an estimate without payment figures and offers conversion', function
     ], [], $user);
 
     $customer = createCustomerWithLocation([
-        'name' => 'RxNow Pharmacy LLC',
+        'name' => 'Sandline Pharmacy LLC',
     ], [], $org);
 
     $estimate = createInvoiceWithItems([
@@ -317,7 +317,7 @@ it('sends from the edit page, and offers nothing of the sort on the detail page'
         'email' => 'detail-send@example.test',
     ]);
     $org = createOrganizationWithLocation(['setup_completed_at' => now()], [], $user);
-    $customer = createCustomerWithLocation(['name' => 'RxNow Pharmacy LLC'], [], $org);
+    $customer = createCustomerWithLocation(['name' => 'Sandline Pharmacy LLC'], [], $org);
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-0101',
         'issued_at' => now()->subDays(2),
@@ -336,7 +336,7 @@ it('sends from the edit page, and offers nothing of the sort on the detail page'
     $this->visit("/invoices/{$invoice->id}/edit")
         ->waitForText('Save & Send')
         ->click('button:has-text("Save & Send")')
-        ->waitForText('Email to RxNow Pharmacy LLC')
+        ->waitForText('Email to Sandline Pharmacy LLC')
         ->assertSee('Subject')
         ->assertNoJavaScriptErrors();
 });
@@ -381,7 +381,7 @@ it('does not push the page sideways on a phone', function () {
         'email' => 'detail-mobile@example.test',
     ]);
     $org = createOrganizationWithLocation(['setup_completed_at' => now()], [], $user);
-    $customer = createCustomerWithLocation(['name' => 'Krishna Institute of Medical Sciences Limited'], [], $org);
+    $customer = createCustomerWithLocation(['name' => 'Riverbend Institute of Medical Sciences Limited'], [], $org);
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-0103',
         'currency' => 'INR',
@@ -506,7 +506,7 @@ it('says nothing twice on an invoice nobody has paid yet', function () {
         'country_code' => 'IN',
     ], [], $user);
 
-    $customer = createCustomerWithLocation(['name' => 'Doconline Health India'], [], $org);
+    $customer = createCustomerWithLocation(['name' => 'Brightcare Health India'], [], $org);
 
     $invoice = createInvoiceWithItems([
         'invoice_number' => 'CT-INV-QUIET',
