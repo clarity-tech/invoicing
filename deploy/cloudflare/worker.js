@@ -20,17 +20,20 @@
  * See docs/cloud_run_deployment_plan.md §9.4
  */
 
-/** Cloud Run service hostname. No scheme, no trailing slash. */
-const ORIGIN_HOST = "invoicing-web-823788548123.asia-south1.run.app";
-
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
+    // Cloud Run service hostname, no scheme or trailing slash. Set once with
+    // `bunx wrangler secret put ORIGIN_HOST`.
+    if (!env.ORIGIN_HOST) {
+      return new Response("ORIGIN_HOST is not configured", { status: 500 });
+    }
+
     const incoming = new URL(request.url);
 
     // Same path, same query string, different host.
     const target = new URL(request.url);
     target.protocol = "https:";
-    target.hostname = ORIGIN_HOST;
+    target.hostname = env.ORIGIN_HOST;
     target.port = "";
 
     // Copies method, body, and headers. Host is taken from `target`, not from

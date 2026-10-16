@@ -2,7 +2,8 @@
   // Cloudflare Worker fronting the InvoiceInk Cloud Run service.
   //
   // Deploy:
-  //   cd deploy/cloudflare && bunx wrangler deploy
+  //   cd deploy/cloudflare && bunx wrangler secret put ORIGIN_HOST   # once
+  //   bunx wrangler deploy
   //
   // Test against the live Cloud Run service without touching DNS:
   //   bunx wrangler dev --local
@@ -35,5 +36,5 @@
     "head_sampling_rate": 1
   }
 
-  // No KV, D1, R2 or secrets — this Worker only forwards requests.
+  // No KV, D1 or R2 — this Worker only forwards requests.
 }
