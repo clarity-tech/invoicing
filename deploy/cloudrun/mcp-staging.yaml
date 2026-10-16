@@ -42,7 +42,7 @@
 # APP_ENV stays "production" on purpose. Using "staging" would flip
 # app()->isProduction() to false, which re-enables the MCP_LOCAL_USER_EMAIL
 # fallback in ResolvesActingOrganization. That fallback is unreachable over HTTP
-# (auth:sanctum,api rejects first) but the gate is environment-name-based, so the
+# (auth:api rejects first) but the gate is environment-name-based, so the
 # safer and higher-fidelity choice is to leave the environment identical to
 # production and distinguish this service by its name and database instead.
 #

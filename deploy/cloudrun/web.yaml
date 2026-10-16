@@ -98,8 +98,7 @@ spec:
 
             # Serves the read-only MCP server at POST /mcp. Off unless set, so
             # the endpoint exists only where it is meant to. Every request needs
-            # an OAuth token from signing in, or a Sanctum API token (Settings
-            # -> Connect AI tools), and is throttled to 60 a minute; tools read
+            # an OAuth token from signing in, and is throttled to 60 a minute; tools read
             # only the token owner's current organization. Like the task
             # handler, this decides at container start whether the route
             # exists, as route:cache runs there.
