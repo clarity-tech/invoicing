@@ -27,7 +27,7 @@ it('shows customer details and locations', function () {
 
     $customer = createCustomerWithLocation([
         'name' => 'Riverbend Institute of Medical Sciences Limited',
-        'phone' => '+914044885000',
+        'phone' => '+914012345678',
         'phone_country' => 'IN',
         'currency' => 'INR',
     ], [

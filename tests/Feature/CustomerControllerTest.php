@@ -75,7 +75,7 @@ test('index searches customers by email', function () {
 test('index searches customers by phone', function () {
     $organization = createOrganizationWithLocation();
 
-    createCustomerWithLocation(['name' => 'Alpha Trading', 'phone' => '+914044885000'], [], $organization);
+    createCustomerWithLocation(['name' => 'Alpha Trading', 'phone' => '+914012345678'], [], $organization);
     createCustomerWithLocation(['name' => 'Beta Industries', 'phone' => '+914066778899'], [], $organization);
 
     $this->actingAs($organization->owner);

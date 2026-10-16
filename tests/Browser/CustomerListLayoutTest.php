@@ -39,7 +39,7 @@ it('renders the customer list actions without clipping at desktop width', functi
     // uses "-", which understates the width), and a long two-part location summary.
     createCustomerWithLocation([
         'name' => 'Riverbend Institute of Medical Sciences Limited',
-        'phone' => '+914044885000',
+        'phone' => '+914012345678',
         'phone_country' => 'IN',
         'emails' => new ContactCollection([['name' => 'Accounts Payable', 'email' => 'accounts.payable@riverbend-hospitals.test']]),
     ], [
