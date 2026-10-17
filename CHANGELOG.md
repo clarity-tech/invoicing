@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/clarity-tech/invoicing/compare/v1.20.0...v1.20.1) (2026-10-17)
+
+
+### Build & CI
+
+* move deployment to a private repository ([5fdd3b0](https://github.com/clarity-tech/invoicing/commit/5fdd3b09bfdf1bab14d97b562c7490b88131997f))
+
 ## [1.20.0](https://github.com/clarity-tech/invoicing/compare/v1.19.0...v1.20.0) (2026-10-16)
 
 
